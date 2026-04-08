@@ -13,18 +13,15 @@ if not exist "%PROJECT_DIR%\backend\main.py" (
 
 if not exist "%PYTHON_EXE%" (
     echo [ERREUR] Environnement Python manquant: "%PYTHON_EXE%"
-    echo Cree d'abord le venv et installe les dependances backend:
-    echo   cd /d "%PROJECT_DIR%"
-    echo   python -m venv .venv
-    echo   .venv\Scripts\python -m pip install -r requirements.txt
+    echo Lance d'abord le setup depuis cette racine:
+    echo   setup.bat
     exit /b 1
 )
 
 if not exist "%FRONTEND_DIR%\node_modules" (
     echo [ERREUR] Dependances frontend manquantes dans "%FRONTEND_DIR%\node_modules"
-    echo Installe-les d'abord:
-    echo   cd /d "%FRONTEND_DIR%"
-    echo   npm.cmd ci
+    echo Lance d'abord le setup depuis cette racine:
+    echo   setup.bat
     exit /b 1
 )
 

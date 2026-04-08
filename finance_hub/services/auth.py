@@ -48,13 +48,13 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 
 def bootstrap_initial_admin(db: Session) -> None:
-    """Create the initial admin user if the users table is empty."""
-
-    existing_user = db.scalar(select(User.id).limit(1))
-    if existing_user is not None:
-        return
+    """Ensure the configured admin user exists for local startup."""
 
     settings = get_settings()
+    existing_admin = db.scalar(select(User.id).where(User.email == settings.admin_email.strip().lower()))
+    if existing_admin is not None:
+        return
+
     admin = User(
         email=settings.admin_email.strip().lower(),
         password_hash=hash_password(settings.admin_password),

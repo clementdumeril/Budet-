@@ -12,19 +12,16 @@ if (-not (Test-Path (Join-Path $projectDir "backend\main.py"))) {
 if (-not (Test-Path $pythonExe)) {
     Write-Error @"
 Environnement Python manquant: $pythonExe
-Cree d'abord le venv et installe les dependances backend:
-  cd $projectDir
-  python -m venv .venv
-  .venv\Scripts\python -m pip install -r requirements.txt
+Lance d'abord le setup depuis cette racine:
+  .\setup.ps1
 "@
 }
 
 if (-not (Test-Path (Join-Path $frontendDir "node_modules"))) {
     Write-Error @"
 Dependances frontend manquantes dans: $frontendDir\node_modules
-Installe-les d'abord:
-  cd $frontendDir
-  npm.cmd ci
+Lance d'abord le setup depuis cette racine:
+  .\setup.ps1
 "@
 }
 

@@ -121,9 +121,9 @@ function renderShell() {
     <div class="shell">
       <aside class="sidebar">
         <div class="brand-block">
-          <p class="eyebrow">Student Budget Hub</p>
-          <h1>Budget etudiant</h1>
-          <p class="muted">Template open source pour suivre depenses, epargne, comptes et imports a l'echelle d'un semestre ou d'une annee.</p>
+          <p class="eyebrow">Finance Hub</p>
+          <h1>Pilotage budgetaire</h1>
+          <p class="muted">Interface simple pour suivre depenses, comptes, epargne et imports CSV depuis un seul espace clair.</p>
         </div>
         <nav class="side-nav" id="sideNav"></nav>
       </aside>
@@ -185,13 +185,13 @@ function renderLoginShell(errorMessage?: string) {
   app.innerHTML = `
     <main class="login-layout">
       <section class="login-panel">
-        <p class="eyebrow">Student Budget Hub</p>
-        <h1>Espace budget</h1>
-        <p class="muted">Connecte-toi pour piloter ton budget etudiant, en local ou sur une instance partagee.</p>
+        <p class="eyebrow">Finance Hub</p>
+        <h1>Finance Hub</h1>
+        <p class="muted">Connecte-toi pour piloter tes finances en local avec un parcours de demarrage simple.</p>
         <form id="loginForm" class="login-form">
           <label>
             <span>Email</span>
-            <input id="emailInput" type="email" autocomplete="username" placeholder="demo@studentbudget.local" required />
+            <input id="emailInput" type="email" autocomplete="username" placeholder="demo@financehub.local" required />
           </label>
           <label>
             <span>Mot de passe</span>

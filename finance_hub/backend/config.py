@@ -23,7 +23,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "Student Budget Hub API"
+    app_name: str = "Finance Hub API"
     app_env: str = "development"
     database_url: str = "sqlite:///./data/budget.db"
     csv_path: Path = DEFAULT_CSV_PATH
@@ -31,9 +31,9 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     session_secret: str = "dev-session-secret-change-me"
     session_cookie_name: str = "finance_hub_session"
-    admin_email: str = "demo@studentbudget.local"
+    admin_email: str = "demo@financehub.local"
     admin_password: str = "demo1234"
-    admin_name: str = "Demo Student"
+    admin_name: str = "Finance Hub Demo"
 
     @field_validator("csv_path", mode="before")
     @classmethod

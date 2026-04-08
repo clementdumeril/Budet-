@@ -1,76 +1,38 @@
-# Student Budget Hub
+# Finance Hub
 
-Student Budget Hub est un template open source pour aider des etudiants a suivre leur budget, leurs comptes, leurs imports CSV et leurs depenses recurrentes depuis une interface simple.
+Finance Hub est l'application principale du depot. Elle fournit une interface simple pour suivre depenses, comptes, epargne, imports CSV et tendances budgetaires en local.
 
-Le projet part d'un usage personnel, mais il a ete nettoye pour devenir un socle reusable:
+## Lancement le plus simple
 
-- donnees de demo anonymisees
-- branding generique
-- setup local simple
-- saisie manuelle directement dans l'interface
-- import CSV optionnel
+Depuis le dossier parent qui contient `finance_hub`:
 
-## Ce que le projet fait deja
-
-- authentification par session
-- dashboard budgetaire avec graphiques
-- cash flow et repartition par categories
-- page `Depenses` avec filtres et saisie manuelle
-- page `Accounts` pour plusieurs comptes
-- page `Investissements` pour l'epargne et les placements
-- page `Data` pour preview et import CSV
-
-## Cas d'usage cible
-
-Le projet vise en priorite:
-
-- etudiants qui veulent suivre leur budget sans banque connectee
-- etudiants qui veulent importer un CSV de banque de temps en temps
-- projets open source / associatifs autour du budget etudiant
-
-## Stack
-
-- frontend: Vite + TypeScript + Chart.js
-- backend: FastAPI + SQLAlchemy
-- stockage local: SQLite
-- import: pandas
-- auth: cookie de session HTTP-only
-
-## Lancement rapide
-
-Depuis le dossier parent qui contient `finance_hub` (par exemple `Budget`), tu peux aussi lancer les deux serveurs avec:
-
-```powershell
-.\start.bat
+```bat
+setup.bat
+start.bat
 ```
 
-ou
+Version PowerShell:
 
 ```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
 powershell -ExecutionPolicy Bypass -File .\start.ps1
 ```
 
-Ces scripts:
+Le `setup` prepare le venv Python, installe les dependances frontend et cree les `.env` manquants a partir des exemples.
 
-- ciblent automatiquement `finance_hub`
-- lancent backend + frontend dans deux fenetres separees
-- verifient seulement que le setup minimal existe deja (`.venv` et `frontend/node_modules`)
+## Lancement manuel
 
-### 1. Backend
+### Backend
 
-Depuis la racine du projet:
-
-```bash
+```bat
 python -m venv .venv
 .venv\Scripts\python -m pip install -r requirements.txt
 .venv\Scripts\python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-### 2. Frontend
+### Frontend
 
-Dans un second terminal:
-
-```bash
+```bat
 cd frontend
 npm ci
 npm run dev
@@ -79,33 +41,39 @@ npm run dev
 Frontend: `http://127.0.0.1:5173`  
 Backend: `http://127.0.0.1:8000`
 
-## Compte demo local
+## Connexion locale
 
 Au premier lancement, si la base est vide, l'application cree un compte de demo:
 
-- email: `demo@studentbudget.local`
+- email: `demo@financehub.local`
 - mot de passe: `demo1234`
 
-Ces identifiants sont uniquement la pour le dev local. Change-les avant toute publication d'une instance.
+## Fonctionnalites
 
-## Demo data
+- authentification par session
+- dashboard budgetaire avec graphiques
+- cash flow et repartition par categories
+- suivi des comptes
+- suivi des investissements
+- saisie manuelle des transactions
+- import CSV avec preview
 
-Par defaut, le projet bootstrape un dataset anonyme situe dans `data/demo-budget.csv`.
+## Donnees de demo
 
-Tu peux desactiver ce comportement avec:
+Par defaut, le projet charge `data/demo-budget.csv` si la base est vide.
+
+Pour demarrer sans donnees de demo:
 
 ```env
 BOOTSTRAP_DEMO_DATA=false
 ```
 
-Dans ce mode, l'application demarre vide et tu peux:
-
-- saisir les depenses a la main dans `Depenses`
-- importer un CSV depuis `Data`
-
 ## Variables d'environnement
 
-Exemple complet: `.env.example`
+Exemples:
+
+- `.env.example`
+- `frontend/.env.example`
 
 Variables principales:
 
@@ -116,60 +84,42 @@ Variables principales:
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
 - `ADMIN_NAME`
-
-Frontend:
-
-- `VITE_API_BASE_URL` dans `frontend/.env.example`
+- `VITE_API_BASE_URL`
 
 ## Structure
 
-- `backend/`: API FastAPI et routes metier
-- `services/`: parsing CSV, auth et seed demo
-- `frontend/`: interface Vite/TypeScript
-- `data/`: CSV demo et base SQLite locale
-- `docs/`: architecture, modele de donnees, deploiement
-- `scripts/`: checks simples pour local et CI
+- `backend/`: API FastAPI et routes
+- `services/`: auth, parsing CSV, bootstrap
+- `frontend/`: application Vite/TypeScript
+- `data/`: CSV demo et base locale
+- `docs/`: documentation technique
+- `scripts/`: checks locaux
 
 ## Checks locaux
 
 Backend smoke check:
 
-```bash
-.venv\Scripts\python scripts/smoke_check.py
+```bat
+.venv\Scripts\python scripts\smoke_check.py
 ```
 
 Frontend build:
 
-```bash
+```bat
 cd frontend
 npm run build
 ```
 
-## Avant de publier ton fork ou ton instance
+## Publication
+
+Avant de publier une instance:
 
 - change `SESSION_SECRET`
-- change les credentials demo
+- change les identifiants demo
 - n'expose jamais `data/budget.db`
-- ne committe pas tes CSV bancaires
-- bascule sur Postgres si tu heberges une vraie instance partagee
+- ne committe pas de CSV personnels
 
-## Roadmap recommande
+## Securite et licence
 
-1. ajouter `account_id` sur les transactions
-2. ajouter `income / expense / transfer`
-3. ajouter budgets mensuels et objectifs d'epargne
-4. ajouter edition et suppression inline
-5. ajouter onboarding vide au premier lancement
-6. ajouter importeurs CSV multi-banques
-
-## Contribuer
-
-Lis `CONTRIBUTING.md` avant d'ouvrir une pull request.
-
-## Securite
-
-Voir `SECURITY.md`.
-
-## Licence
-
-MIT. Voir `LICENSE`.
+- securite: `SECURITY.md`
+- licence: `LICENSE`
