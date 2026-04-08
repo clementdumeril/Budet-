@@ -38,6 +38,24 @@ Le projet vise en priorite:
 
 ## Lancement rapide
 
+Depuis le dossier parent qui contient `finance_hub` (par exemple `Budget`), tu peux aussi lancer les deux serveurs avec:
+
+```powershell
+.\start.bat
+```
+
+ou
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start.ps1
+```
+
+Ces scripts:
+
+- ciblent automatiquement `finance_hub`
+- lancent backend + frontend dans deux fenetres separees
+- verifient seulement que le setup minimal existe deja (`.venv` et `frontend/node_modules`)
+
 ### 1. Backend
 
 Depuis la racine du projet:
