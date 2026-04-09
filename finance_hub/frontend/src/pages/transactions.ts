@@ -96,14 +96,14 @@ function buildFilterOptions(transactions: Transaction[], state: TransactionFilte
     categories,
     yearMarkup: buildSelectOptions(
       [
-        { value: "all", label: "Date" },
+        { value: "all", label: "Toutes les annees" },
         ...years.map((year) => ({ value: String(year), label: String(year) })),
       ],
       state.year,
     ),
     categoryMarkup: buildSelectOptions(
       [
-        { value: "all", label: "Filters" },
+        { value: "all", label: "Toutes les categories" },
         ...categories.map((category) => ({ value: category, label: category })),
       ],
       state.category,
@@ -141,7 +141,7 @@ export async function renderTransactionsPage(): Promise<HTMLElement> {
           </div>
           <div class="ledger-toolbar">
             <label class="toolbar-search">
-              <input id="transactionsSearch" type="search" placeholder="Search" />
+              <input id="transactionsSearch" type="search" placeholder="Rechercher une ligne" />
             </label>
             <select id="transactionsYear" class="toolbar-select">
               ${filterOptions.yearMarkup}
@@ -159,7 +159,7 @@ export async function renderTransactionsPage(): Promise<HTMLElement> {
                 state.reimbursed,
               )}
             </select>
-            <button class="ghost-button" id="resetTransactionsFilters" type="button">Reset</button>
+            <button class="ghost-button" id="resetTransactionsFilters" type="button">Reinitialiser</button>
           </div>
         </div>
 
@@ -177,7 +177,7 @@ export async function renderTransactionsPage(): Promise<HTMLElement> {
         <section class="ledger-summary panel">
           <div class="panel-heading compact-heading">
             <div>
-              <p class="eyebrow">Summary</p>
+              <p class="eyebrow">Synthese</p>
               <h2>Resume</h2>
             </div>
           </div>
@@ -187,7 +187,7 @@ export async function renderTransactionsPage(): Promise<HTMLElement> {
         <section class="panel manual-entry-panel">
           <div class="panel-heading compact-heading">
             <div>
-              <p class="eyebrow">Manual entry</p>
+              <p class="eyebrow">Saisie manuelle</p>
               <h2>Ajouter une depense</h2>
             </div>
           </div>
@@ -368,13 +368,13 @@ export async function renderTransactionsPage(): Promise<HTMLElement> {
 
     summary.innerHTML = `
       <article><span>Total transactions</span><strong>${totals.count}</strong></article>
-      <article><span>Largest transaction</span><strong>${totals.largest ? formatEuro(totals.largest.amount) : "-"}</strong></article>
-      <article><span>Average transaction</span><strong>${formatEuro(totals.average)}</strong></article>
+      <article><span>Plus grosse ligne</span><strong>${totals.largest ? formatEuro(totals.largest.amount) : "-"}</strong></article>
+      <article><span>Moyenne par ligne</span><strong>${formatEuro(totals.average)}</strong></article>
       <article><span>Total perso</span><strong>${formatEuro(totals.own)}</strong></article>
       <article><span>Total parents</span><strong>${formatEuro(totals.reimbursed)}</strong></article>
-      <article><span>Top category</span><strong>${totals.topCategory?.category ?? "-"}</strong><small>${totals.topCategory ? formatPercent(totals.topCategory.share) : ""}</small></article>
-      <article><span>First period</span><strong>${totals.first ? formatPeriodLabel(totals.first.year, totals.first.month, totals.first.month_name) : "-"}</strong></article>
-      <article><span>Last period</span><strong>${totals.last ? formatPeriodLabel(totals.last.year, totals.last.month, totals.last.month_name) : "-"}</strong></article>
+      <article><span>Categorie dominante</span><strong>${totals.topCategory?.category ?? "-"}</strong><small>${totals.topCategory ? formatPercent(totals.topCategory.share) : ""}</small></article>
+      <article><span>Premiere periode</span><strong>${totals.first ? formatPeriodLabel(totals.first.year, totals.first.month, totals.first.month_name) : "-"}</strong></article>
+      <article><span>Derniere periode</span><strong>${totals.last ? formatPeriodLabel(totals.last.year, totals.last.month, totals.last.month_name) : "-"}</strong></article>
     `;
   };
 

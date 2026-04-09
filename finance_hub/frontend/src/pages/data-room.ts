@@ -10,6 +10,10 @@ import {
   type NotesPreviewResponse,
 } from "../api/client";
 
+function sanitizeUiCopy(value: string) {
+  return value.split("\u00C2\u00B7").join(" - ");
+}
+
 function formatDate(value: string | null) {
   if (!value) {
     return "Jamais";
@@ -33,7 +37,8 @@ function formatAmount(value: number) {
 }
 
 function renderSourcesMarkup(sources: ImportSource[]) {
-  return sources
+  return sanitizeUiCopy(
+    sources
     .map(
       (source) => `
         <article class="overview-list-item">
@@ -48,7 +53,8 @@ function renderSourcesMarkup(sources: ImportSource[]) {
         </article>
       `,
     )
-    .join("");
+    .join(""),
+  );
 }
 
 function renderPreviewMarkup(preview: CsvPreviewResponse | NotesPreviewResponse | null, sourceLabel: "notes" | "csv") {
@@ -60,7 +66,7 @@ function renderPreviewMarkup(preview: CsvPreviewResponse | NotesPreviewResponse 
     `;
   }
 
-  return `
+  return sanitizeUiCopy(`
     <div class="import-preview-header">
       <div>
         <strong>${"filename" in preview ? preview.filename : `Capture ${sourceLabel}`}</strong>
@@ -95,7 +101,7 @@ function renderPreviewMarkup(preview: CsvPreviewResponse | NotesPreviewResponse 
         </tbody>
       </table>
     </div>
-  `;
+  `);
 }
 
 function buildClaudeCsvPrompt() {
@@ -399,6 +405,7 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
 
     fileName.textContent = selectedFile.name;
     fileMeta.textContent = `${(selectedFile.size / 1024).toFixed(1)} Ko · ${selectedFile.type || "text/csv"}`;
+    fileMeta.textContent = sanitizeUiCopy(fileMeta.textContent ?? "");
     status.textContent = "Fichier charge. Lance une preview pour verifier le parsing.";
   });
 

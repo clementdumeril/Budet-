@@ -19,6 +19,16 @@ if (appRoot === null) {
 
 const app = appRoot;
 
+function formatRoleLabel(role: string | undefined) {
+  if (!role) {
+    return "viewer";
+  }
+  if (role === "admin") {
+    return "admin local";
+  }
+  return role;
+}
+
 const navItems: Array<{ key: ViewName; label: string; description: string; eyebrow: string; title: string }> = [
   {
     key: "overview",
@@ -36,9 +46,9 @@ const navItems: Array<{ key: ViewName; label: string; description: string; eyebr
   },
   {
     key: "accounts",
-    label: "Accounts",
-    description: "Vue multi-comptes et soldes",
-    eyebrow: "Accounts",
+    label: "Comptes",
+    description: "Soldes, banques et reperes",
+    eyebrow: "Comptes",
     title: "Pilotage des comptes et des banques",
   },
   {
@@ -50,9 +60,9 @@ const navItems: Array<{ key: ViewName; label: string; description: string; eyebr
   },
   {
     key: "reports",
-    label: "Reports",
+    label: "Rapports",
     description: "Rapports et analyses",
-    eyebrow: "Reports",
+    eyebrow: "Rapports",
     title: "Rapports analytiques et tendances",
   },
   {
@@ -64,9 +74,9 @@ const navItems: Array<{ key: ViewName; label: string; description: string; eyebr
   },
   {
     key: "data",
-    label: "Data",
-    description: "Sources brutes et imports",
-    eyebrow: "Data",
+    label: "Donnees",
+    description: "Imports, notes et exports",
+    eyebrow: "Donnees",
     title: "Donnees brutes et pipelines d'import",
   },
 ];
@@ -124,17 +134,35 @@ function renderShell() {
           <p class="eyebrow">Finance Hub</p>
           <h1>Pilotage budgetaire</h1>
           <p class="muted">Interface simple pour suivre depenses, comptes, epargne et imports CSV depuis un seul espace clair.</p>
+          <div class="brand-meta-strip">
+            <article class="brand-meta-card">
+              <span>Mode</span>
+              <strong>Local</strong>
+            </article>
+            <article class="brand-meta-card">
+              <span>Usage</span>
+              <strong>Etudiant</strong>
+            </article>
+          </div>
         </div>
         <nav class="side-nav" id="sideNav"></nav>
+        <div class="sidebar-footer">
+          <p class="sidebar-footer-title">${currentUser?.full_name ?? "Session locale"}</p>
+          <p class="sidebar-footer-copy">Base locale active, imports et rapports centralises dans un seul flux.</p>
+        </div>
       </aside>
       <main class="content-area">
         <header class="topbar">
-          <div>
+          <div class="topbar-copy">
             <p class="eyebrow" id="topbarEyebrow">Dashboard</p>
             <h2 id="topbarTitle">Vue generale du budget</h2>
+            <p class="topbar-note">Espace de pilotage unique pour lire le budget, saisir vite et normaliser les donnees.</p>
           </div>
           <div class="topbar-actions">
-            <div class="status-chip">${currentUser?.role ?? "viewer"}</div>
+            <div class="topbar-user">
+              <span class="status-chip">${formatRoleLabel(currentUser?.role)}</span>
+              <strong>${currentUser?.full_name ?? "Utilisateur local"}</strong>
+            </div>
             <button class="logout-button" id="logoutButton" type="button">Se deconnecter</button>
           </div>
         </header>
