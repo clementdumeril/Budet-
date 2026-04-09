@@ -445,51 +445,44 @@ function buildCashflowMap(metrics: DashboardMetrics, ownCategories: CategorySumm
         items,
         value: Number(items.reduce((sum, item) => sum + item.total, 0).toFixed(2)),
       };
-    })
-    .filter((group) => group.value > 0);
+      })
+      .filter((group) => group.value > 0);
 
   const splitNodes = [
-    ...(metrics.reimbursed > 0
-      ? [{ key: "parents", label: "Parents", color: "#3cae7b", value: metrics.reimbursed, items: [] as DisplayCategory[] }]
-      : []),
-    ...groups,
-  ];
+    { key: "own", label: "A ta charge", color: "#597ef7", value: metrics.own },
+    ...(metrics.reimbursed > 0 ? [{ key: "parents", label: "Parents", color: "#3cae7b", value: metrics.reimbursed }] : []),
+  ].filter((node) => node.value > 0);
 
-  const viewWidth = 1040;
-  const viewHeight = 430;
-  const top = 46;
-  const flowHeight = 312;
-  const startX = 18;
-  const middleX = 305;
-  const splitX = 560;
-  const endX = 900;
-  const barWidth = 14;
+  const layoutSegments = <T extends { value: number }>(
+    items: T[],
+    total: number,
+    startY: number,
+    height: number,
+    gap: number,
+    minimumHeight: number,
+  ) => {
+    if (!items.length) {
+      return [] as Array<T & { y: number; height: number }>;
+    }
 
-  const layoutSegments = <T extends { value: number }>(items: T[], total: number, y: number, height: number, gap: number) => {
     const usableHeight = height - gap * Math.max(items.length - 1, 0);
-    let cursor = y;
+    const floor = Math.min(minimumHeight, usableHeight / items.length);
+    const rawHeights = items.map((item) => (total > 0 ? usableHeight * (item.value / total) : usableHeight / items.length));
+    const liftedHeights = rawHeights.map((value) => Math.max(value, floor));
+    const scale = usableHeight / liftedHeights.reduce((sum, value) => sum + value, 0);
+    const normalizedHeights = liftedHeights.map((value) => value * scale);
+
+    let cursor = startY;
     return items.map((item, index) => {
-      const rawHeight = total > 0 ? usableHeight * (item.value / total) : usableHeight / Math.max(items.length, 1);
-      const segmentHeight = index === items.length - 1 ? y + height - cursor : rawHeight;
+      const segmentHeight = index === items.length - 1 ? startY + height - cursor : normalizedHeights[index];
       const laidOut = { ...item, y: cursor, height: segmentHeight };
       cursor += segmentHeight + gap;
       return laidOut;
     });
   };
 
-  const trackedSegments = layoutSegments(splitNodes, metrics.total, top, flowHeight, 12);
-  const rightNodes = groups.flatMap((group) => group.items);
-  const leafSegments = layoutSegments(rightNodes, metrics.own || 1, top + 14, flowHeight - 28, 10);
-
-  const groupLeafMap = new Map<string, Array<(DisplayCategory & { y: number; height: number })>>();
-  leafSegments.forEach((leaf) => {
-    const bucket = groupLeafMap.get(leaf.groupKey) ?? [];
-    bucket.push(leaf);
-    groupLeafMap.set(leaf.groupKey, bucket);
-  });
-
   const ribbonPath = (x1: number, x2: number, y1Top: number, y1Bottom: number, y2Top: number, y2Bottom: number) => {
-    const curve = (x2 - x1) * 0.48;
+    const curve = Math.max((x2 - x1) * 0.42, 42);
     return [
       `M ${x1} ${y1Top}`,
       `C ${x1 + curve} ${y1Top}, ${x2 - curve} ${y2Top}, ${x2} ${y2Top}`,
@@ -499,53 +492,137 @@ function buildCashflowMap(metrics: DashboardMetrics, ownCategories: CategorySumm
     ].join(" ");
   };
 
-  const splitRibbons = trackedSegments
-    .map((segment) => {
-      const fill = segment.key === "parents" ? "rgba(60, 174, 123, 0.22)" : `${segment.color}2b`;
-      return `<path d="${ribbonPath(middleX + barWidth, splitX, segment.y, segment.y + segment.height, segment.y, segment.y + segment.height)}" fill="${fill}" />`;
-    })
-    .join("");
+  const viewWidth = 1180;
+  const viewHeight = 470;
+  const top = 58;
+  const flowHeight = 336;
+  const nodeWidth = 18;
+  const sourceX = 72;
+  const splitX = 336;
+  const groupX = 622;
+  const leafX = 904;
 
-  const leafRibbons = groups
-    .flatMap((group) => {
-      const parent = trackedSegments.find((segment) => segment.key === group.key);
-      const leaves = groupLeafMap.get(group.key) ?? [];
-      if (!parent || leaves.length === 0) {
-        return [];
-      }
+  const splitSlices = layoutSegments(splitNodes, metrics.total, top, flowHeight, 18, 34);
+  const sourceSlices = layoutSegments(splitNodes, metrics.total, top, flowHeight, 0, 0);
+  const ownSplit = splitSlices.find((node) => node.key === "own");
 
-      let cursor = parent.y;
-      return leaves.map((leaf) => {
-        const path = ribbonPath(
-          splitX + barWidth,
-          endX,
-          cursor,
-          cursor + leaf.height,
-          leaf.y,
-          leaf.y + leaf.height,
-        );
-        cursor += leaf.height;
-        return `<path d="${path}" fill="${leaf.color}24" />`;
-      });
-    })
-    .join("");
+  const groupSegments = ownSplit
+    ? layoutSegments(groups, metrics.own || 1, ownSplit.y, ownSplit.height, 16, 32)
+    : [];
+  const ownSlices = ownSplit
+    ? layoutSegments(groups, metrics.own || 1, ownSplit.y, ownSplit.height, 0, 0)
+    : [];
 
-  const splitLabels = trackedSegments
+  const leafSegments = groupSegments.flatMap((group) =>
+    layoutSegments(group.items, Math.max(group.value, 1), group.y, group.height, 10, 24),
+  );
+  const groupSourceSlices = groupSegments.flatMap((group) =>
+    layoutSegments(group.items, Math.max(group.value, 1), group.y, group.height, 0, 0),
+  );
+
+  const splitCards = splitSlices
     .map(
-      (segment) => `
-        <rect x="${splitX}" y="${segment.y}" width="${barWidth}" height="${segment.height}" rx="6" fill="${segment.color}" />
-        <text x="${splitX + 154}" y="${segment.y + segment.height / 2 - 8}" text-anchor="end" class="cashflow-value">${escapeHtml(segment.label)}</text>
-        <text x="${splitX + 154}" y="${segment.y + segment.height / 2 + 16}" text-anchor="end" class="cashflow-caption">${escapeHtml(formatEuro(segment.value))} (${formatPercent((segment.value / metrics.total) * 100)})</text>
+      (node) => `
+        <article class="cashflow-node cashflow-node-split">
+          <div class="cashflow-node-topline">
+            <span class="cashflow-node-label"><i style="background:${node.color}"></i>${escapeHtml(node.label)}</span>
+            <strong>${escapeHtml(formatEuro(node.value))}</strong>
+          </div>
+          <div class="cashflow-meter"><span style="width:${Math.max((node.value / metrics.total) * 100, 6)}%; background:${node.color}"></span></div>
+          <small>${formatPercent((node.value / metrics.total) * 100)} du total selectionne</small>
+        </article>
       `,
     )
     .join("");
 
-  const leafLabels = leafSegments
+  const topOwnCategories = categories.length
+    ? categories
+        .map(
+          (item) => `
+            <article class="cashflow-list-card">
+              <div class="cashflow-list-head">
+                <span class="cashflow-list-label"><i style="background:${item.color}"></i>${escapeHtml(item.category)}</span>
+                <strong>${escapeHtml(formatEuro(item.total))}</strong>
+              </div>
+              <div class="cashflow-meter"><span style="width:${Math.max((item.total / Math.max(metrics.own, 1)) * 100, 8)}%; background:${item.color}"></span></div>
+              <small>${formatPercent((item.total / Math.max(metrics.own, 1)) * 100)} de la charge perso</small>
+            </article>
+          `,
+        )
+        .join("")
+    : `<div class="empty-state">Aucune categorie perso a detailler.</div>`;
+
+  const splitLinks = splitSlices
+    .map((target, index) => {
+      const source = sourceSlices[index];
+      return `<path class="cashflow-link" d="${ribbonPath(
+        sourceX + nodeWidth,
+        splitX,
+        source.y,
+        source.y + source.height,
+        target.y,
+        target.y + target.height,
+      )}" fill="${target.key === "parents" ? "rgba(60, 174, 123, 0.24)" : "rgba(89, 126, 247, 0.24)"}" />`;
+    })
+    .join("");
+
+  const groupLinks = groupSegments
+    .map((target, index) => {
+      const source = ownSlices[index];
+      return `<path class="cashflow-link" d="${ribbonPath(
+        splitX + nodeWidth,
+        groupX,
+        source.y,
+        source.y + source.height,
+        target.y,
+        target.y + target.height,
+      )}" fill="${target.color}26" />`;
+    })
+    .join("");
+
+  const leafLinks = leafSegments
+    .map((target) => {
+      const source = groupSourceSlices.find((item) => item.category === target.category);
+      if (!source) {
+        return "";
+      }
+
+      return `<path class="cashflow-link" d="${ribbonPath(
+        groupX + nodeWidth,
+        leafX,
+        source.y,
+        source.y + source.height,
+        target.y,
+        target.y + target.height,
+      )}" fill="${target.color}24" />`;
+    })
+    .join("");
+
+  const splitNodeRects = splitSlices
     .map(
-      (leaf) => `
-        <rect x="${endX}" y="${leaf.y}" width="${barWidth}" height="${leaf.height}" rx="6" fill="${leaf.color}" />
-        <text x="${endX - 16}" y="${leaf.y + leaf.height / 2 - 8}" text-anchor="end" class="cashflow-value">${escapeHtml(leaf.category)}</text>
-        <text x="${endX - 16}" y="${leaf.y + leaf.height / 2 + 16}" text-anchor="end" class="cashflow-caption">${escapeHtml(formatEuro(leaf.total))}</text>
+      (node) => `
+        <rect x="${splitX}" y="${node.y}" width="${nodeWidth}" height="${node.height}" rx="7" fill="${node.color}" />
+        <text x="${splitX + nodeWidth + 14}" y="${node.y + node.height / 2 - 4}" class="cashflow-node-title">${escapeHtml(node.label)}</text>
+        <text x="${splitX + nodeWidth + 14}" y="${node.y + node.height / 2 + 18}" class="cashflow-node-subtitle">${escapeHtml(formatEuro(node.value))}</text>
+      `,
+    )
+    .join("");
+
+  const groupNodeRects = groupSegments
+    .map(
+      (group) => `
+        <rect x="${groupX}" y="${group.y}" width="${nodeWidth}" height="${group.height}" rx="7" fill="${group.color}" />
+        <text x="${groupX + nodeWidth + 14}" y="${group.y + group.height / 2 - 4}" class="cashflow-node-title">${escapeHtml(group.label)}</text>
+        <text x="${groupX + nodeWidth + 14}" y="${group.y + group.height / 2 + 18}" class="cashflow-node-subtitle">${escapeHtml(formatEuro(group.value))}</text>
+      `,
+    )
+    .join("");
+
+  const leafNodeRects = leafSegments
+    .map(
+      (item) => `
+        <rect x="${leafX}" y="${item.y}" width="${nodeWidth}" height="${item.height}" rx="7" fill="${item.color}" />
+        <text x="${leafX + nodeWidth + 14}" y="${item.y + item.height / 2 + 6}" class="cashflow-leaf-title">${escapeHtml(item.category)}</text>
       `,
     )
     .join("");
@@ -555,29 +632,66 @@ function buildCashflowMap(metrics: DashboardMetrics, ownCategories: CategorySumm
       <div class="cashflow-header-row">
         <div>
           <p class="eyebrow">Cash flow</p>
-          <h3>Lecture structuree des depenses</h3>
+          <h3>Lecture claire du flux budgetaire</h3>
         </div>
         <div class="cashflow-toolbar">
-          <span class="cashflow-chip">Par categories</span>
+          <span class="cashflow-chip">Sankey budgetaire</span>
           <span class="cashflow-chip">${metrics.monthsCount} periodes</span>
         </div>
       </div>
-      <svg class="cashflow-svg" viewBox="0 0 ${viewWidth} ${viewHeight}" role="img" aria-label="Carte des flux budgetaires">
-        <rect x="0" y="0" width="${viewWidth}" height="${viewHeight}" rx="24" fill="transparent" />
-        <rect x="${startX}" y="${top}" width="250" height="${flowHeight}" rx="24" fill="rgba(70, 163, 245, 0.16)" />
-        <rect x="${middleX}" y="${top}" width="220" height="${flowHeight}" rx="24" fill="rgba(90, 206, 187, 0.16)" />
-        <rect x="${startX}" y="${top}" width="${barWidth}" height="${flowHeight}" rx="6" fill="#1b9cd8" />
-        <rect x="${middleX}" y="${top}" width="${barWidth}" height="${flowHeight}" rx="6" fill="#3ac2a7" />
-        <path d="${ribbonPath(startX + barWidth, middleX, top, top + flowHeight, top, top + flowHeight)}" fill="rgba(95, 184, 227, 0.28)" />
-        ${splitRibbons}
-        ${leafRibbons}
-        <text x="${startX + 34}" y="${top + flowHeight / 2 - 10}" class="cashflow-value">Selection</text>
-        <text x="${startX + 34}" y="${top + flowHeight / 2 + 20}" class="cashflow-caption">${escapeHtml(formatEuro(metrics.total))} (100%)</text>
-        <text x="${middleX + 34}" y="${top + flowHeight / 2 - 10}" class="cashflow-value">Budget observe</text>
-        <text x="${middleX + 34}" y="${top + flowHeight / 2 + 20}" class="cashflow-caption">${escapeHtml(formatEuro(metrics.total))} (100%)</text>
-        ${splitLabels}
-        ${leafLabels}
-      </svg>
+      <div class="cashflow-summary-strip">
+        <article class="cashflow-summary-card">
+          <span>Total observe</span>
+          <strong>${escapeHtml(formatEuro(metrics.total))}</strong>
+          <small>100% de la selection</small>
+        </article>
+        <article class="cashflow-summary-card">
+          <span>A ta charge</span>
+          <strong>${escapeHtml(formatEuro(metrics.own))}</strong>
+          <small>${formatPercent((metrics.own / metrics.total) * 100)} du total</small>
+        </article>
+        <article class="cashflow-summary-card">
+          <span>Parents</span>
+          <strong>${escapeHtml(formatEuro(metrics.reimbursed))}</strong>
+          <small>${formatPercent((metrics.reimbursed / metrics.total) * 100)} du total</small>
+        </article>
+      </div>
+      <div class="cashflow-sankey-shell">
+        <svg class="cashflow-svg" viewBox="0 0 ${viewWidth} ${viewHeight}" role="img" aria-label="Sankey budgetaire du total vers les postes de depense">
+          <rect x="0" y="0" width="${viewWidth}" height="${viewHeight}" rx="28" fill="rgba(255,255,255,0.48)" />
+          <text x="${sourceX}" y="34" class="cashflow-column-label">Selection</text>
+          <text x="${splitX}" y="34" class="cashflow-column-label">Split</text>
+          <text x="${groupX}" y="34" class="cashflow-column-label">Blocs</text>
+          <text x="${leafX}" y="34" class="cashflow-column-label">Categories</text>
+
+          <rect x="${sourceX}" y="${top}" width="${nodeWidth}" height="${flowHeight}" rx="7" fill="#1f2430" />
+          <text x="${sourceX + nodeWidth + 16}" y="${top + flowHeight / 2 - 8}" class="cashflow-source-title">Total selectionne</text>
+          <text x="${sourceX + nodeWidth + 16}" y="${top + flowHeight / 2 + 18}" class="cashflow-source-value">${escapeHtml(formatEuro(metrics.total))}</text>
+
+          ${splitLinks}
+          ${groupLinks}
+          ${leafLinks}
+          ${splitNodeRects}
+          ${groupNodeRects}
+          ${leafNodeRects}
+        </svg>
+      </div>
+      <div class="cashflow-side-grid">
+        <section class="cashflow-column">
+          <div class="cashflow-column-head">
+            <strong>Lecture globale</strong>
+            <span>${splitNodes.length} blocs</span>
+          </div>
+          <div class="cashflow-list">${splitCards}</div>
+        </section>
+        <section class="cashflow-column">
+          <div class="cashflow-column-head">
+            <strong>Postes les plus lourds</strong>
+            <span>${categories.length} categories</span>
+          </div>
+          <div class="cashflow-list">${topOwnCategories}</div>
+        </section>
+      </div>
     </div>
   `;
 }

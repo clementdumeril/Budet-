@@ -124,18 +124,41 @@ export type CsvImportResponse = {
   path: string;
 };
 
+export type NotesPreviewResponse = {
+  detected_rows: number;
+  categories: string[];
+  preview: CsvPreviewRow[];
+};
+
+export type NotesImportResponse = {
+  status: string;
+  imported: number;
+};
+
 export type AuthResponse = {
   user: User;
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+
+async function buildApiError(response: Response): Promise<Error> {
+  try {
+    const payload = (await response.json()) as { detail?: string };
+    if (payload.detail) {
+      return new Error(payload.detail);
+    }
+  } catch {
+    // Ignore JSON decoding failures and fall back to status-based message.
+  }
+  return new Error(`API request failed: ${response.status}`);
+}
 
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     credentials: "include",
   });
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    throw await buildApiError(response);
   }
   return (await response.json()) as T;
 }
@@ -150,7 +173,7 @@ async function postJson<T>(path: string, body?: unknown): Promise<T> {
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    throw await buildApiError(response);
   }
   if (response.status === 204) {
     return undefined as T;
@@ -247,6 +270,37 @@ export async function importCsvUpload(file: File, replaceExisting = true) {
     content_base64: await encodeFileToBase64(file),
     replace_existing: replaceExisting,
   });
+}
+
+export function previewNotesCapture(content: string) {
+  return postJson<NotesPreviewResponse>("/api/import-notes/preview", {
+    content,
+    replace_existing: true,
+  });
+}
+
+export function importNotesCapture(content: string, replaceExisting = true) {
+  return postJson<NotesImportResponse>("/api/import-notes", {
+    content,
+    replace_existing: replaceExisting,
+  });
+}
+
+export async function downloadTransactionsExport() {
+  const response = await fetch(`${API_BASE_URL}/api/transactions/export`, {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw await buildApiError(response);
+  }
+
+  const disposition = response.headers.get("content-disposition") ?? "";
+  const match = disposition.match(/filename="([^"]+)"/);
+  const filename = match?.[1] ?? "finance-hub-report.csv";
+  return {
+    filename,
+    blob: await response.blob(),
+  };
 }
 
 export function login(email: string, password: string) {

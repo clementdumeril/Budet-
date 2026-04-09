@@ -7,18 +7,24 @@ Finance Hub est l'application principale du depot. Elle fournit une interface si
 Depuis le dossier parent qui contient `finance_hub`:
 
 ```bat
-setup.bat
-start.bat
+FinanceHub.bat
 ```
 
 Version PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\setup.ps1
-powershell -ExecutionPolicy Bypass -File .\start.ps1
+powershell -ExecutionPolicy Bypass -File .\tools\windows\setup.ps1
+powershell -ExecutionPolicy Bypass -File .\tools\windows\start.ps1
 ```
 
-Le `setup` prepare le venv Python, installe les dependances frontend et cree les `.env` manquants a partir des exemples.
+Le lanceur principal appelle le `setup`, coupe les anciens serveurs Finance Hub encore actifs, rebuild le frontend si besoin et relance un backend propre qui sert l'interface sur `http://127.0.0.1:8000` ou sur le prochain port libre.
+
+Scripts techniques disponibles si besoin:
+
+- `tools/windows/setup.bat`
+- `tools/windows/start.bat`
+
+Les logs backend sont ecrits dans `data/logs/`.
 
 ## Lancement manuel
 
@@ -27,19 +33,14 @@ Le `setup` prepare le venv Python, installe les dependances frontend et cree les
 ```bat
 python -m venv .venv
 .venv\Scripts\python -m pip install -r requirements.txt
-.venv\Scripts\python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-### Frontend
-
-```bat
 cd frontend
 npm ci
-npm run dev
+npm run build
+cd ..
+.venv\Scripts\python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 
-Frontend: `http://127.0.0.1:5173`  
-Backend: `http://127.0.0.1:8000`
+Application: `http://127.0.0.1:8000`
 
 ## Connexion locale
 
@@ -84,7 +85,8 @@ Variables principales:
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
 - `ADMIN_NAME`
-- `VITE_API_BASE_URL`
+
+En local, le frontend utilise `/api` sur le meme serveur que le backend. `VITE_API_BASE_URL` reste optionnelle pour des cas avances.
 
 ## Structure
 

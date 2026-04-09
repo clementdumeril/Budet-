@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import base64
+import csv
 import datetime as dt
+from io import StringIO
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -17,6 +19,9 @@ from backend.schemas import (
     CsvImportResponse,
     CsvPreviewResponse,
     CsvUploadPayload,
+    NotesImportResponse,
+    NotesParsePayload,
+    NotesPreviewResponse,
     TransactionCreate,
     TransactionListResponse,
     TransactionRead,
@@ -24,6 +29,7 @@ from backend.schemas import (
 )
 from services.auth import get_current_user, require_editor_user
 from services.csv_parser import MONTH_LABELS, import_transactions_from_csv, parse_budget_csv_bytes
+from services.note_parser import parse_note_lines
 
 
 router = APIRouter(prefix="/api", tags=["transactions"], dependencies=[Depends(get_current_user)])
@@ -55,29 +61,37 @@ def _persist_csv_payload(filename: str, content: bytes) -> Path:
     return target
 
 
-def _record_csv_import(db: Session, target: Path) -> None:
-    """Update the import source registry after a successful CSV import."""
+def _record_import_source(
+    db: Session,
+    *,
+    label: str,
+    provider: str,
+    source_type: str,
+    status_value: str,
+    relative_path: str | None,
+    notes: str,
+) -> None:
+    """Update the import source registry after a successful ingestion."""
 
-    source = db.scalar(select(ImportSource).where(ImportSource.label == "Primary budget import"))
-    relative_path = str(target.relative_to(DATA_DIR.parent))
+    source = db.scalar(select(ImportSource).where(ImportSource.label == label))
     imported_at = dt.datetime.utcnow()
     if source is None:
         source = ImportSource(
-            label="Primary budget import",
-            provider="Browser upload",
-            source_type="csv",
-            status="connected",
+            label=label,
+            provider=provider,
+            source_type=source_type,
+            status=status_value,
             last_imported_at=imported_at,
             storage_path=relative_path,
-            notes="Latest CSV imported from the web interface.",
+            notes=notes,
         )
         db.add(source)
     else:
-        source.provider = "Browser upload"
-        source.status = "connected"
+        source.provider = provider
+        source.status = status_value
         source.last_imported_at = imported_at
         source.storage_path = relative_path
-        source.notes = "Latest CSV imported from the web interface."
+        source.notes = notes
     db.commit()
 
 
@@ -215,7 +229,10 @@ def preview_uploaded_csv(
     """Preview normalized CSV rows before importing them."""
 
     content = _decode_csv_payload(payload)
-    rows = parse_budget_csv_bytes(content)
+    try:
+        rows = parse_budget_csv_bytes(content)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     categories = sorted({str(row["category"]) for row in rows})
     preview = rows[:8]
     return CsvPreviewResponse(
@@ -236,11 +253,132 @@ def upload_csv_and_import(
 
     content = _decode_csv_payload(payload)
     target = _persist_csv_payload(payload.filename, content)
-    imported_count = import_transactions_from_csv(db, target, replace_existing=payload.replace_existing)
-    _record_csv_import(db, target)
+    try:
+        imported_count = import_transactions_from_csv(db, target, replace_existing=payload.replace_existing)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    _record_import_source(
+        db,
+        label="Primary budget import",
+        provider="Browser upload",
+        source_type="csv",
+        status_value="connected",
+        relative_path=str(target.relative_to(DATA_DIR.parent)),
+        notes="Latest CSV imported from the web interface.",
+    )
     return CsvImportResponse(
         status="ok",
         imported=imported_count,
         filename=payload.filename,
         path=str(target),
+    )
+
+
+@router.post("/import-notes/preview", response_model=NotesPreviewResponse)
+def preview_notes_capture(
+    payload: NotesParsePayload,
+    _: object = Depends(require_editor_user),
+) -> NotesPreviewResponse:
+    """Preview normalized rows derived from manual finance notes."""
+
+    try:
+        rows = parse_note_lines(payload.content)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    categories = sorted({str(row["category"]) for row in rows})
+    return NotesPreviewResponse(
+        detected_rows=len(rows),
+        categories=categories,
+        preview=rows[:8],
+    )
+
+
+@router.post("/import-notes", response_model=NotesImportResponse)
+def import_notes_capture(
+    payload: NotesParsePayload,
+    db: Session = Depends(get_db),
+    _: object = Depends(require_editor_user),
+) -> NotesImportResponse:
+    """Import transactions parsed from line-based notes."""
+
+    try:
+        rows = parse_note_lines(payload.content)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    if payload.replace_existing:
+        db.query(Transaction).delete()
+        db.commit()
+
+    transactions = [
+        Transaction(
+            source_row=int(row["source_row"]),
+            month_name=str(row["month_name"]),
+            year=int(row["year"]),
+            month=int(row["month"]),
+            date=row.get("date"),
+            category=str(row["category"]),
+            description=str(row["description"]) if row.get("description") else None,
+            amount=float(row["amount"]),
+            reimbursement_to_parents=bool(row["reimbursement_to_parents"]),
+            source="note_capture",
+        )
+        for row in rows
+    ]
+    db.add_all(transactions)
+    db.commit()
+    _record_import_source(
+        db,
+        label="Quick notes capture",
+        provider="Browser notes",
+        source_type="notes",
+        status_value="connected",
+        relative_path=None,
+        notes="Latest note batch imported from the web interface.",
+    )
+    return NotesImportResponse(status="ok", imported=len(transactions))
+
+
+@router.get("/transactions/export")
+def export_transactions_report(
+    db: Session = Depends(get_db),
+) -> Response:
+    """Export the normalized transaction base as a CSV report."""
+
+    items = db.scalars(select(Transaction).order_by(Transaction.year.asc(), Transaction.month.asc(), Transaction.id.asc())).all()
+    output = StringIO()
+    writer = csv.DictWriter(
+        output,
+        fieldnames=[
+            "date",
+            "month_name",
+            "year",
+            "month",
+            "category",
+            "description",
+            "amount",
+            "reimbursement_to_parents",
+            "source",
+        ],
+    )
+    writer.writeheader()
+    for item in items:
+        writer.writerow(
+            {
+                "date": item.date.isoformat() if item.date else "",
+                "month_name": item.month_name,
+                "year": item.year,
+                "month": item.month,
+                "category": item.category,
+                "description": item.description or "",
+                "amount": f"{item.amount:.2f}",
+                "reimbursement_to_parents": "yes" if item.reimbursement_to_parents else "no",
+                "source": item.source,
+            }
+        )
+
+    filename = f"finance-hub-report-{dt.datetime.utcnow().strftime('%Y%m%d-%H%M%S')}.csv"
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

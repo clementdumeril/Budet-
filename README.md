@@ -9,15 +9,29 @@ Le contenu personnel et legacy a ete sorti du chemin principal dans `archive/` p
 Depuis cette racine:
 
 ```bat
-setup.bat
-start.bat
+FinanceHub.bat
 ```
+
+Ce lanceur unique:
+
+- prepare l'environnement si besoin
+- build le frontend
+- coupe les anciens serveurs Finance Hub encore ouverts
+- lance le backend unique sur `8000` ou sur le prochain port libre
+- ouvre l'application dans le navigateur
+
+Les logs backend sont ecrits dans `finance_hub/data/logs/`.
+
+Scripts techniques secondaires:
+
+- `tools/windows/setup.bat`
+- `tools/windows/start.bat`
 
 Version PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\setup.ps1
-powershell -ExecutionPolicy Bypass -File .\start.ps1
+powershell -ExecutionPolicy Bypass -File .\tools\windows\setup.ps1
+powershell -ExecutionPolicy Bypass -File .\tools\windows\start.ps1
 ```
 
 ## Parcours officiel
@@ -35,6 +49,6 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 
 La racine sert uniquement a:
 
-- lancer le setup
-- lancer `finance_hub`
+- lancer Finance Hub en un clic
+- garder un point d'entree minimal
 - documenter l'entree principale

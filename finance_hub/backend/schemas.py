@@ -252,6 +252,28 @@ class CsvImportResponse(BaseModel):
     path: str
 
 
+class NotesParsePayload(BaseModel):
+    """Free-form notes payload sent from the browser."""
+
+    content: str
+    replace_existing: bool = True
+
+
+class NotesPreviewResponse(BaseModel):
+    """Preview metadata for note-based capture before import."""
+
+    detected_rows: int
+    categories: list[str]
+    preview: list[CsvPreviewRow]
+
+
+class NotesImportResponse(BaseModel):
+    """Import result payload for note-based capture."""
+
+    status: str
+    imported: int
+
+
 class StudyPlanLine(BaseModel):
     """A cost or resource line in a study funding plan."""
 

@@ -1,9 +1,13 @@
 import {
+  downloadTransactionsExport,
   fetchImportSources,
   importCsvUpload,
+  importNotesCapture,
   previewCsvUpload,
+  previewNotesCapture,
   type CsvPreviewResponse,
   type ImportSource,
+  type NotesPreviewResponse,
 } from "../api/client";
 
 function formatDate(value: string | null) {
@@ -47,11 +51,11 @@ function renderSourcesMarkup(sources: ImportSource[]) {
     .join("");
 }
 
-function renderPreviewMarkup(preview: CsvPreviewResponse | null) {
+function renderPreviewMarkup(preview: CsvPreviewResponse | NotesPreviewResponse | null, sourceLabel: "notes" | "csv") {
   if (!preview) {
     return `
       <div class="empty-state import-empty-state">
-        <p>Choisis un fichier puis lance une preview pour verifier les lignes avant import.</p>
+        <p>Lance une preview depuis les notes ou depuis un CSV pour verifier les lignes avant import.</p>
       </div>
     `;
   }
@@ -59,7 +63,7 @@ function renderPreviewMarkup(preview: CsvPreviewResponse | null) {
   return `
     <div class="import-preview-header">
       <div>
-        <strong>${preview.filename}</strong>
+        <strong>${"filename" in preview ? preview.filename : `Capture ${sourceLabel}`}</strong>
         <p>${preview.detected_rows} lignes detectees · ${preview.categories.join(", ") || "Aucune categorie"}</p>
       </div>
     </div>
@@ -94,10 +98,54 @@ function renderPreviewMarkup(preview: CsvPreviewResponse | null) {
   `;
 }
 
+function buildClaudeCsvPrompt() {
+  return [
+    "Transforme ce CSV bancaire en CSV normalise pour Finance Hub.",
+    "Conserve uniquement les depenses positives.",
+    "Sors exactement ces colonnes dans cet ordre :",
+    "date,month_name,year,month,category,description,amount,reimbursement_to_parents,source",
+    "",
+    "Regles :",
+    "- `date` au format YYYY-MM-DD si disponible, sinon vide.",
+    "- `month_name` en francais: Janvier, Fevrier, Mars, Avril, Mai, Juin, Juillet, Aout, Septembre, Octobre, Novembre, Decembre.",
+    "- `year` sur 4 chiffres.",
+    "- `month` entre 1 et 12.",
+    "- `category` choisie parmi: Alimentation, Transport, Loyer, Loisirs, Abonnements, Sante, Scolarite, Ponctuel, Autre.",
+    "- `description` courte et propre.",
+    "- `amount` en nombre positif avec point decimal.",
+    "- `reimbursement_to_parents` vaut `yes` ou `no`.",
+    "- `source` vaut `csv_import`.",
+    "",
+    "Ne retourne que le CSV final, sans commentaire ni markdown.",
+  ].join("\n");
+}
+
+function buildNotesTemplate() {
+  return [
+    "2026-04-08 | Alimentation | Courses Carrefour | 32,50 | perso",
+    "2026-04 | Loyer | Studio Paris | 650 | perso",
+    "Avril 2026 | Transport | Train Lyon | 48,90 | parents",
+  ].join("\n");
+}
+
+function downloadBlob(filename: string, blob: Blob) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
 export async function renderDataRoomPage(): Promise<HTMLElement> {
   let sources = await fetchImportSources();
   let selectedFile: File | null = null;
-  let preview: CsvPreviewResponse | null = null;
+  let preview: CsvPreviewResponse | NotesPreviewResponse | null = null;
+  let previewSource: "notes" | "csv" = "notes";
+  const claudePrompt = buildClaudeCsvPrompt();
+  const notesTemplate = buildNotesTemplate();
 
   const section = document.createElement("section");
   section.className = "page-grid";
@@ -105,10 +153,14 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
     <section class="overview-hero">
       <div>
         <p class="eyebrow">Data</p>
-        <h1>Zone donnees brutes et pipelines d'import.</h1>
-        <p class="hero-copy">Tu deposes ici les exports banque ou broker, tu verifies le parsing, puis tu importes la base exploitee par les dashboards.</p>
+        <h1>Entrer des notes, normaliser des CSV et sortir des rapports.</h1>
+        <p class="hero-copy">Le flux principal part des notes rapides. Le CSV reste disponible en seconde voie avec aide de normalisation et export rapport depuis le site.</p>
       </div>
       <div class="overview-mini-stats">
+        <article>
+          <span>Modes d'entree</span>
+          <strong>2</strong>
+        </article>
         <article>
           <span>Sources suivies</span>
           <strong>${sources.length}</strong>
@@ -120,12 +172,47 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
       </div>
     </section>
 
-    <section class="overview-layout">
+    <section class="overview-layout data-room-grid">
       <article class="panel import-panel">
         <div class="panel-heading">
           <div>
-            <p class="eyebrow">Upload</p>
-            <h2>Importer un nouveau CSV</h2>
+            <p class="eyebrow">Notes first</p>
+            <h2>Capturer des depenses depuis des notes</h2>
+          </div>
+        </div>
+
+        <div class="import-form">
+          <label class="field manual-field manual-field-span">
+            <span>Notes ligne par ligne</span>
+            <textarea id="notesCaptureInput" class="notes-capture-input" placeholder="2026-04-08 | Alimentation | Courses Carrefour | 32,50 | perso&#10;2026-04 | Loyer | Studio Paris | 650 | perso&#10;Avril 2026 | Transport | Train Lyon | 48,90 | parents"></textarea>
+          </label>
+          <div class="csv-assist-block">
+            <div class="csv-assist-head">
+              <strong>Modele notes</strong>
+              <button id="fillNotesTemplateButton" class="ghost-button" type="button">Charger un exemple</button>
+            </div>
+            <textarea id="notesTemplateOutput" class="claude-prompt-output" readonly>${notesTemplate}</textarea>
+          </div>
+
+          <label class="import-toggle">
+            <input id="replaceNotesExistingInput" type="checkbox" />
+            <span>Remplacer les transactions existantes avec cette capture</span>
+          </label>
+
+          <div class="import-actions">
+            <button id="previewNotesButton" class="ghost-button" type="button">Preview notes</button>
+            <button id="importNotesButton" class="primary-button import-primary" type="button">Importer les notes</button>
+          </div>
+
+          <p id="notesStatus" class="muted import-status">Utilise les notes comme entree principale pour construire une base propre.</p>
+        </div>
+      </article>
+
+      <article class="panel import-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">CSV assist</p>
+            <h2>Importer un CSV ou le faire normaliser avant</h2>
           </div>
         </div>
 
@@ -142,6 +229,14 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
             <span>Remplacer les transactions existantes par ce nouvel import</span>
           </label>
 
+          <div class="csv-assist-block">
+            <div class="csv-assist-head">
+              <strong>Prompt Claude pour normaliser un CSV non compatible</strong>
+              <button id="copyClaudePromptButton" class="ghost-button" type="button">Copier le prompt</button>
+            </div>
+            <textarea id="claudePromptOutput" class="claude-prompt-output" readonly>${claudePrompt}</textarea>
+          </div>
+
           <div class="import-actions">
             <button id="previewImportButton" class="ghost-button" type="button">Preview</button>
             <button id="runImportButton" class="primary-button import-primary" type="button">Importer</button>
@@ -153,6 +248,16 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
 
       <article class="panel">
         <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Exports</p>
+            <h2>Sortir des rapports depuis le site</h2>
+          </div>
+        </div>
+        <div class="import-form export-actions-block">
+          <button id="downloadReportButton" class="primary-button import-primary" type="button">Telecharger le CSV rapport</button>
+          <p id="reportStatus" class="muted import-status">Exporte la base normalisee actuelle sous forme de CSV rapport.</p>
+        </div>
+        <div class="panel-heading compact-heading">
           <div>
             <p class="eyebrow">Sources</p>
             <h2>Donnees disponibles</h2>
@@ -173,7 +278,7 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
           </div>
         </div>
         <div id="importPreviewWrap">
-          ${renderPreviewMarkup(preview)}
+          ${renderPreviewMarkup(preview, previewSource)}
         </div>
       </article>
 
@@ -187,23 +292,23 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
         <div class="insights-grid insights-grid-dual">
           <article class="insight-card">
             <span class="badge badge-orange">1</span>
-            <strong>Deposer le brut</strong>
-            <p>Export CSV banque, budget ou broker.</p>
+            <strong>Capturer en notes</strong>
+            <p>Tu notes rapidement les depenses par ligne puis tu verifies la preview.</p>
           </article>
           <article class="insight-card">
             <span class="badge badge-blue">2</span>
-            <strong>Verifier la preview</strong>
-            <p>Tu controles categories, montants et libelles avant ecriture.</p>
+            <strong>Normaliser le CSV si besoin</strong>
+            <p>Si ton export banque est exotique, tu peux le reformater avec le prompt Claude fourni.</p>
           </article>
           <article class="insight-card">
             <span class="badge badge-green">3</span>
-            <strong>Importer la base</strong>
-            <p>Le backend sauvegarde le fichier puis remplit la base exploitee.</p>
+            <strong>Importer une base propre</strong>
+            <p>Le backend remplit ensuite la base exploitee par les dashboards.</p>
           </article>
           <article class="insight-card">
             <span class="badge badge-rose">4</span>
-            <strong>Lire les dashboards</strong>
-            <p>Les vues se basent ensuite sur les donnees propres, pas sur le CSV brut.</p>
+            <strong>Sortir un rapport CSV</strong>
+            <p>Tu peux retelecharger un CSV propre depuis le site pour partage ou archivage.</p>
           </article>
         </div>
       </article>
@@ -211,23 +316,45 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
   `;
 
   const fileInput = section.querySelector<HTMLInputElement>("#csvUploadInput");
+  const notesInput = section.querySelector<HTMLTextAreaElement>("#notesCaptureInput");
   const fileName = section.querySelector<HTMLElement>("#importFileName");
   const fileMeta = section.querySelector<HTMLElement>("#importFileMeta");
   const replaceExistingInput = section.querySelector<HTMLInputElement>("#replaceExistingInput");
+  const replaceNotesExistingInput = section.querySelector<HTMLInputElement>("#replaceNotesExistingInput");
+  const previewNotesButton = section.querySelector<HTMLButtonElement>("#previewNotesButton");
+  const importNotesButton = section.querySelector<HTMLButtonElement>("#importNotesButton");
+  const fillNotesTemplateButton = section.querySelector<HTMLButtonElement>("#fillNotesTemplateButton");
   const previewButton = section.querySelector<HTMLButtonElement>("#previewImportButton");
   const importButton = section.querySelector<HTMLButtonElement>("#runImportButton");
+  const notesStatus = section.querySelector<HTMLElement>("#notesStatus");
   const status = section.querySelector<HTMLElement>("#importStatus");
+  const reportStatus = section.querySelector<HTMLElement>("#reportStatus");
+  const copyClaudePromptButton = section.querySelector<HTMLButtonElement>("#copyClaudePromptButton");
+  const claudePromptOutput = section.querySelector<HTMLTextAreaElement>("#claudePromptOutput");
+  const notesTemplateOutput = section.querySelector<HTMLTextAreaElement>("#notesTemplateOutput");
+  const downloadReportButton = section.querySelector<HTMLButtonElement>("#downloadReportButton");
   const previewWrap = section.querySelector<HTMLElement>("#importPreviewWrap");
   const sourcesList = section.querySelector<HTMLElement>("#importSourcesList");
 
   if (
     !fileInput ||
+    !notesInput ||
     !fileName ||
     !fileMeta ||
     !replaceExistingInput ||
+    !replaceNotesExistingInput ||
+    !previewNotesButton ||
+    !importNotesButton ||
+    !fillNotesTemplateButton ||
     !previewButton ||
     !importButton ||
+    !notesStatus ||
     !status ||
+    !reportStatus ||
+    !copyClaudePromptButton ||
+    !claudePromptOutput ||
+    !notesTemplateOutput ||
+    !downloadReportButton ||
     !previewWrap ||
     !sourcesList
   ) {
@@ -236,9 +363,18 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
 
   const setBusy = (busy: boolean) => {
     fileInput.disabled = busy;
+    notesInput.disabled = busy;
     replaceExistingInput.disabled = busy;
+    replaceNotesExistingInput.disabled = busy;
+    previewNotesButton.disabled = busy;
+    importNotesButton.disabled = busy;
+    fillNotesTemplateButton.disabled = busy;
     previewButton.disabled = busy;
     importButton.disabled = busy;
+    copyClaudePromptButton.disabled = busy;
+    downloadReportButton.disabled = busy;
+    previewNotesButton.textContent = busy ? "Chargement..." : "Preview notes";
+    importNotesButton.textContent = busy ? "Import en cours..." : "Importer les notes";
     previewButton.textContent = busy ? "Chargement..." : "Preview";
     importButton.textContent = busy ? "Import en cours..." : "Importer";
   };
@@ -251,7 +387,8 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
   fileInput.addEventListener("change", () => {
     selectedFile = fileInput.files?.[0] ?? null;
     preview = null;
-    previewWrap.innerHTML = renderPreviewMarkup(preview);
+    previewSource = "csv";
+    previewWrap.innerHTML = renderPreviewMarkup(preview, previewSource);
 
     if (!selectedFile) {
       fileName.textContent = "Choisir un export banque ou budget";
@@ -265,6 +402,56 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
     status.textContent = "Fichier charge. Lance une preview pour verifier le parsing.";
   });
 
+  previewNotesButton.addEventListener("click", async () => {
+    const content = notesInput.value.trim();
+    if (!content) {
+      notesStatus.textContent = "Ajoute d'abord quelques lignes de notes.";
+      return;
+    }
+
+    setBusy(true);
+    notesStatus.textContent = "Lecture et structuration des notes...";
+
+    try {
+      preview = await previewNotesCapture(content);
+      previewSource = "notes";
+      previewWrap.innerHTML = renderPreviewMarkup(preview, previewSource);
+      notesStatus.textContent = `${preview.detected_rows} lignes detectees depuis les notes.`;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erreur inconnue";
+      notesStatus.textContent = `Preview impossible: ${message}`;
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  fillNotesTemplateButton.addEventListener("click", () => {
+    notesInput.value = notesTemplateOutput.value;
+    notesStatus.textContent = "Exemple charge. Adapte les lignes puis lance la preview.";
+  });
+
+  importNotesButton.addEventListener("click", async () => {
+    const content = notesInput.value.trim();
+    if (!content) {
+      notesStatus.textContent = "Ajoute d'abord quelques lignes de notes.";
+      return;
+    }
+
+    setBusy(true);
+    notesStatus.textContent = "Import des notes dans la base...";
+
+    try {
+      const result = await importNotesCapture(content, replaceNotesExistingInput.checked);
+      await refreshSources();
+      notesStatus.textContent = `${result.imported} lignes importees depuis les notes.`;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erreur inconnue";
+      notesStatus.textContent = `Import impossible: ${message}`;
+    } finally {
+      setBusy(false);
+    }
+  });
+
   previewButton.addEventListener("click", async () => {
     if (!selectedFile) {
       status.textContent = "Choisis d'abord un fichier CSV.";
@@ -276,7 +463,8 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
 
     try {
       preview = await previewCsvUpload(selectedFile);
-      previewWrap.innerHTML = renderPreviewMarkup(preview);
+      previewSource = "csv";
+      previewWrap.innerHTML = renderPreviewMarkup(preview, previewSource);
       status.textContent = `${preview.detected_rows} lignes detectees. Tu peux maintenant importer.`;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Erreur inconnue";
@@ -304,6 +492,31 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
       status.textContent = `Import impossible: ${message}`;
     } finally {
       setBusy(false);
+    }
+  });
+
+  copyClaudePromptButton.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(claudePromptOutput.value);
+      status.textContent = "Prompt Claude copie.";
+    } catch {
+      claudePromptOutput.select();
+      status.textContent = "Copie automatique impossible. Le prompt a ete selectionne.";
+    }
+  });
+
+  downloadReportButton.addEventListener("click", async () => {
+    reportStatus.textContent = "Preparation du rapport CSV...";
+    downloadReportButton.disabled = true;
+    try {
+      const { filename, blob } = await downloadTransactionsExport();
+      downloadBlob(filename, blob);
+      reportStatus.textContent = `Rapport telecharge: ${filename}.`;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erreur inconnue";
+      reportStatus.textContent = `Export impossible: ${message}`;
+    } finally {
+      downloadReportButton.disabled = false;
     }
   });
 

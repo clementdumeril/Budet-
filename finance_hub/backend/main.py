@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from starlette.middleware.sessions import SessionMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import func, select
 
 from backend.config import get_settings
@@ -19,6 +22,9 @@ from services.seed_finance import bootstrap_finance_workspace
 
 
 settings = get_settings()
+BASE_DIR = Path(__file__).resolve().parent.parent
+FRONTEND_DIST_DIR = BASE_DIR / "frontend" / "dist"
+FRONTEND_INDEX = FRONTEND_DIST_DIR / "index.html"
 
 
 @asynccontextmanager
@@ -75,3 +81,28 @@ def healthcheck() -> dict[str, str]:
     """Return a simple health signal for local checks."""
 
     return {"status": "ok"}
+
+
+if FRONTEND_DIST_DIR.exists():
+    frontend_assets_dir = FRONTEND_DIST_DIR / "assets"
+    if frontend_assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=frontend_assets_dir), name="frontend-assets")
+
+    @app.get("/", include_in_schema=False)
+    def serve_frontend_root() -> FileResponse:
+        """Serve the built frontend entrypoint."""
+
+        return FileResponse(FRONTEND_INDEX)
+
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def serve_frontend_app(full_path: str) -> FileResponse:
+        """Serve the SPA shell for non-API routes."""
+
+        if full_path.startswith(("api", "docs", "redoc", "openapi.json")):
+            raise HTTPException(status_code=404, detail="Not found")
+
+        candidate = FRONTEND_DIST_DIR / full_path
+        if candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(FRONTEND_INDEX)

@@ -453,6 +453,41 @@ button:disabled {
   gap: 18px;
 }
 
+.cashflow-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cashflow-summary-card {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(31, 36, 48, 0.05);
+}
+
+.cashflow-summary-card span,
+.cashflow-summary-card small {
+  color: var(--muted);
+}
+
+.cashflow-summary-card strong {
+  font-family: "Sora", sans-serif;
+  font-size: 1.15rem;
+}
+
+.cashflow-sankey-shell {
+  padding: 14px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top left, rgba(89, 126, 247, 0.08), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(246, 239, 229, 0.88));
+  border: 1px solid rgba(31, 36, 48, 0.05);
+  overflow: auto;
+}
+
 .cashflow-header-row {
   display: flex;
   justify-content: space-between;
@@ -484,24 +519,241 @@ button:disabled {
   font-family: "Sora", sans-serif;
 }
 
+.cashflow-node,
+.cashflow-group-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(31, 36, 48, 0.05);
+  box-shadow: 0 16px 34px rgba(72, 52, 21, 0.05);
+}
+
+.cashflow-node-total {
+  align-content: center;
+  background:
+    linear-gradient(180deg, rgba(89, 126, 247, 0.14), rgba(255, 255, 255, 0.72)),
+    rgba(255, 255, 255, 0.68);
+}
+
+.cashflow-node-kicker {
+  margin: 0;
+  color: var(--blue);
+  font-family: "Sora", sans-serif;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cashflow-node h4,
+.cashflow-node strong,
+.cashflow-group-head strong {
+  margin: 0;
+  font-family: "Sora", sans-serif;
+}
+
+.cashflow-node h4 {
+  font-size: 1.15rem;
+}
+
+.cashflow-node strong {
+  font-size: 1.45rem;
+}
+
+.cashflow-node small,
+.cashflow-group-head small,
+.cashflow-item-row span {
+  color: var(--muted);
+}
+
+.cashflow-node-topline,
+.cashflow-group-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.cashflow-node-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.cashflow-node-label i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.cashflow-group-head {
+  align-items: flex-start;
+}
+
+.cashflow-group-head div {
+  display: grid;
+  gap: 6px;
+}
+
+.cashflow-group-items {
+  display: grid;
+  gap: 8px;
+}
+
+.cashflow-item-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(244, 237, 224, 0.65);
+}
+
 .cashflow-svg {
   width: 100%;
+  min-width: 1080px;
   height: auto;
   display: block;
 }
 
-.cashflow-value {
+.cashflow-column-label,
+.cashflow-source-title,
+.cashflow-source-value,
+.cashflow-node-title,
+.cashflow-node-subtitle,
+.cashflow-leaf-title {
   fill: #243040;
+}
+
+.cashflow-column-label {
   font-family: "Sora", sans-serif;
-  font-size: 18px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cashflow-source-title,
+.cashflow-node-title {
+  font-family: "Sora", sans-serif;
+  font-size: 16px;
   font-weight: 700;
 }
 
-.cashflow-caption {
-  fill: #697485;
+.cashflow-source-value,
+.cashflow-node-subtitle {
+  fill: #6f7786;
   font-family: "Manrope", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cashflow-leaf-title {
+  font-family: "Sora", sans-serif;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.cashflow-link {
+  transition: opacity 140ms ease;
+}
+
+.cashflow-link:hover {
+  opacity: 0.92;
+}
+
+.cashflow-side-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.cashflow-column {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(31, 36, 48, 0.05);
+}
+
+.cashflow-column .cashflow-list {
+  display: grid;
+  gap: 12px;
+}
+
+.cashflow-column-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.cashflow-column-head strong {
+  font-family: "Sora", sans-serif;
+}
+
+.cashflow-column-head span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.cashflow-list-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.cashflow-list-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.cashflow-list-head strong {
+  font-family: "Sora", sans-serif;
+  font-size: 0.95rem;
+}
+
+.cashflow-list-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.cashflow-list-label i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.cashflow-meter {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(31, 36, 48, 0.08);
+  overflow: hidden;
+}
+
+.cashflow-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.cashflow-list-card small {
+  color: var(--muted);
 }
 
 .dashboard-bottom {
@@ -722,6 +974,11 @@ button:disabled {
   gap: 22px;
 }
 
+.data-room-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+}
+
 .overview-list,
 .reports-stat-list,
 .summary-metrics {
@@ -799,6 +1056,50 @@ button:disabled {
 .import-actions {
   display: flex;
   gap: 12px;
+}
+
+.export-actions-block {
+  margin-bottom: 18px;
+}
+
+.csv-assist-block {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(31, 36, 48, 0.05);
+}
+
+.csv-assist-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.csv-assist-head strong {
+  font-family: "Sora", sans-serif;
+}
+
+.claude-prompt-output,
+.notes-capture-input {
+  width: 100%;
+  min-height: 180px;
+  padding: 14px 16px;
+  border: 1px solid rgba(31, 36, 48, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--text);
+  resize: vertical;
+  font: inherit;
+  line-height: 1.6;
+}
+
+.claude-prompt-output {
+  min-height: 220px;
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 0.9rem;
 }
 
 .import-primary {
@@ -1152,6 +1453,8 @@ button:disabled {
 
 @media (max-width: 1280px) {
   .dashboard-bottom,
+  .cashflow-side-grid,
+  .cashflow-summary-strip,
   .kpi-grid,
   .overview-card-grid,
   .overview-layout,
@@ -1197,6 +1500,7 @@ button:disabled {
   .hero-aside,
   .analytics-layout,
   .dashboard-bottom,
+  .cashflow-side-grid,
   .overview-layout,
   .kpi-grid,
   .overview-card-grid,
@@ -1239,7 +1543,9 @@ button:disabled {
   .topbar,
   .panel-heading,
   .flow-row-head,
-  .cashflow-header-row {
+  .cashflow-header-row,
+  .cashflow-node-topline,
+  .cashflow-group-head {
     flex-direction: column;
   }
 
@@ -1261,6 +1567,12 @@ button:disabled {
 
   .import-actions,
   .import-toggle {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .csv-assist-head,
+  .cashflow-column-head {
     flex-direction: column;
     align-items: flex-start;
   }

@@ -1,8 +1,8 @@
 @echo off
 setlocal
 
-set "ROOT_DIR=%~dp0"
-set "PROJECT_DIR=%ROOT_DIR%finance_hub"
+for %%I in ("%~dp0..\..") do set "ROOT_DIR=%%~fI"
+set "PROJECT_DIR=%ROOT_DIR%\finance_hub"
 set "FRONTEND_DIR=%PROJECT_DIR%\frontend"
 set "VENV_DIR=%PROJECT_DIR%\.venv"
 set "PYTHON_EXE=%VENV_DIR%\Scripts\python.exe"
@@ -44,23 +44,32 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [INFO] Installation des dependances frontend
+if not exist "%FRONTEND_DIR%\node_modules\.bin\vite.cmd" (
+    echo [INFO] Installation des dependances frontend
+    pushd "%FRONTEND_DIR%"
+    npm.cmd ci
+    if errorlevel 1 (
+        popd
+        exit /b 1
+    )
+    popd
+) else (
+    echo [INFO] Dependances frontend deja presentes
+)
+
+if not exist "%PROJECT_DIR%\.env" if exist "%PROJECT_DIR%\.env.example" (
+    copy /y "%PROJECT_DIR%\.env.example" "%PROJECT_DIR%\.env" >nul
+)
+
+echo [INFO] Build du frontend statique
 pushd "%FRONTEND_DIR%"
-npm.cmd ci
+npm.cmd run build
 if errorlevel 1 (
     popd
     exit /b 1
 )
 popd
 
-if not exist "%PROJECT_DIR%\.env" if exist "%PROJECT_DIR%\.env.example" (
-    copy /y "%PROJECT_DIR%\.env.example" "%PROJECT_DIR%\.env" >nul
-)
-
-if not exist "%FRONTEND_DIR%\.env" if exist "%FRONTEND_DIR%\.env.example" (
-    copy /y "%FRONTEND_DIR%\.env.example" "%FRONTEND_DIR%\.env" >nul
-)
-
 echo [OK] Setup termine.
 echo Tu peux maintenant lancer:
-echo   start.bat
+echo   FinanceHub.bat
