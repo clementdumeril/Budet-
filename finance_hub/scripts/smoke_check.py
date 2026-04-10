@@ -19,6 +19,8 @@ def main() -> None:
     routes = {route.path for route in app.routes if hasattr(route, "path")}
     assert "/api/health" in routes, "health endpoint missing"
     assert "/api/transactions" in routes, "transactions endpoint missing"
+    assert "/api/budget-plan" in routes, "budget plan endpoint missing"
+    assert "/api/budgets" in routes, "budget target endpoint missing"
 
     if settings.bootstrap_demo_data and settings.csv_path.exists():
         rows = parse_budget_csv(settings.csv_path)

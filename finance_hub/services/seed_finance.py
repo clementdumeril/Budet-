@@ -7,7 +7,7 @@ import datetime as dt
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.models import Account, ImportSource, Investment
+from backend.models import Account, BudgetTarget, ImportSource, Investment
 
 
 def bootstrap_finance_workspace(db: Session) -> None:
@@ -95,6 +95,18 @@ def bootstrap_finance_workspace(db: Session) -> None:
                     status="planned",
                     notes="Pipeline prevu pour suivre versements, positions et valorisations.",
                 ),
+            ]
+        )
+
+    if db.scalar(select(BudgetTarget.id).limit(1)) is None:
+        today = dt.date.today()
+        db.add_all(
+            [
+                BudgetTarget(year=today.year, month=today.month, category="Loyer", planned_amount=650.0),
+                BudgetTarget(year=today.year, month=today.month, category="Alimentation", planned_amount=260.0),
+                BudgetTarget(year=today.year, month=today.month, category="Transport", planned_amount=120.0),
+                BudgetTarget(year=today.year, month=today.month, category="Loisirs", planned_amount=90.0),
+                BudgetTarget(year=today.year, month=today.month, category="Abonnements", planned_amount=35.0),
             ]
         )
 

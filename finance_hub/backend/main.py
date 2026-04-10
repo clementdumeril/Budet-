@@ -15,7 +15,7 @@ from sqlalchemy import func, select
 from backend.config import get_settings
 from backend.database import Base, SessionLocal, engine, init_storage
 from backend.models import Transaction
-from backend.routers import analytics, auth, budget, loans, workspace
+from backend.routers import analytics, auth, budget, loans, planning, workspace
 from services.auth import bootstrap_initial_admin
 from services.csv_parser import import_transactions_from_csv
 from services.seed_finance import bootstrap_finance_workspace
@@ -64,7 +64,7 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=settings.session_secret,
     session_cookie=settings.session_cookie_name,
-    same_site="lax",
+    same_site=settings.session_same_site,
     https_only=settings.app_env == "production",
     max_age=60 * 60 * 24 * 14,
 )
@@ -73,6 +73,7 @@ app.include_router(auth.router)
 app.include_router(analytics.router)
 app.include_router(budget.router)
 app.include_router(loans.router)
+app.include_router(planning.router)
 app.include_router(workspace.router)
 
 

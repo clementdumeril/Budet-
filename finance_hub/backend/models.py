@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 
-from sqlalchemy import Boolean, Date, DateTime, Float, Integer, String, Text
+from sqlalchemy import Boolean, Date, DateTime, Float, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.database import Base
@@ -100,3 +100,24 @@ class ImportSource(Base):
     last_imported_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
     storage_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class BudgetTarget(Base):
+    """Monthly budget target per category."""
+
+    __tablename__ = "budgets"
+    __table_args__ = (UniqueConstraint("year", "month", "category", name="uq_budgets_period_category"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    year: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    month: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    category: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    planned_amount: Mapped[float] = mapped_column(Float, nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow, nullable=False)
+    updated_at: Mapped[dt.datetime] = mapped_column(
+        DateTime,
+        default=dt.datetime.utcnow,
+        onupdate=dt.datetime.utcnow,
+        nullable=False,
+    )

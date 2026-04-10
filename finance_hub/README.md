@@ -1,6 +1,6 @@
 # Finance Hub
 
-Finance Hub est l'application principale du depot. Elle fournit une interface simple pour suivre depenses, comptes, epargne, imports CSV et tendances budgetaires en local.
+Finance Hub est l'application principale du depot. Elle fournit une interface simple pour suivre depenses, comptes, budgets mensuels, imports CSV et tendances budgetaires en local.
 
 ## Lancement le plus simple
 
@@ -17,7 +17,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\windows\setup.ps1
 powershell -ExecutionPolicy Bypass -File .\tools\windows\start.ps1
 ```
 
-Le lanceur principal appelle le `setup`, coupe les anciens serveurs Finance Hub encore actifs, rebuild le frontend si besoin et relance un backend propre qui sert l'interface sur `http://127.0.0.1:8000` ou sur le prochain port libre.
+Le lanceur principal verifie l'environnement, lance le `setup` seulement si besoin, coupe les anciens serveurs Finance Hub encore actifs et relance un backend propre qui sert l'interface sur `http://127.0.0.1:8000` ou sur le prochain port libre.
 
 Scripts techniques disponibles si besoin:
 
@@ -44,7 +44,7 @@ Application: `http://127.0.0.1:8000`
 
 ## Connexion locale
 
-Au premier lancement, si la base est vide, l'application cree un compte de demo:
+Au premier lancement, si `BOOTSTRAP_ADMIN=true` et si la base est vide, l'application cree un compte de demo:
 
 - email: `demo@financehub.local`
 - mot de passe: `demo1234`
@@ -53,6 +53,7 @@ Au premier lancement, si la base est vide, l'application cree un compte de demo:
 
 - authentification par session
 - dashboard budgetaire avec graphiques
+- budget mensuel `prevu vs reel`
 - cash flow et repartition par categories
 - suivi des comptes
 - suivi des investissements
@@ -81,17 +82,33 @@ Variables principales:
 - `DATABASE_URL`
 - `CSV_PATH`
 - `BOOTSTRAP_DEMO_DATA`
+- `BOOTSTRAP_ADMIN`
 - `SESSION_SECRET`
+- `SESSION_SAME_SITE`
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
 - `ADMIN_NAME`
 
 En local, le frontend utilise `/api` sur le meme serveur que le backend. `VITE_API_BASE_URL` reste optionnelle pour des cas avances.
 
+Pour un frontend sur Netlify avec backend separe:
+
+- configure `CORS_ORIGINS` avec le domaine du frontend
+- passe `SESSION_SAME_SITE=none`
+- garde `APP_ENV=production`
+- active HTTPS cote backend
+
+Guide production:
+
+- `docs/deployment-production.md`
+- `../render.yaml`
+- `../.github/workflows/deploy-frontend-github-pages.yml`
+
 ## Structure
 
 - `backend/`: API FastAPI et routes
 - `services/`: auth, parsing CSV, bootstrap
+- `services/`: auth, parsing CSV, bootstrap, budget planning
 - `frontend/`: application Vite/TypeScript
 - `data/`: CSV demo et base locale
 - `docs/`: documentation technique
@@ -118,6 +135,7 @@ Avant de publier une instance:
 
 - change `SESSION_SECRET`
 - change les identifiants demo
+- desactive `BOOTSTRAP_ADMIN` apres initialisation si tu ne veux plus de creation auto
 - n'expose jamais `data/budget.db`
 - ne committe pas de CSV personnels
 

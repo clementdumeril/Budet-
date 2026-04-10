@@ -73,6 +73,53 @@ class KPIResponse(BaseModel):
     months_count: int
 
 
+class BudgetTargetBase(BaseModel):
+    """Shared monthly budget target fields."""
+
+    year: int = Field(ge=2020, le=2100)
+    month: int = Field(ge=1, le=12)
+    category: str
+    planned_amount: float = Field(gt=0)
+    notes: str | None = None
+
+
+class BudgetTargetCreate(BudgetTargetBase):
+    """Create or update a monthly budget target."""
+
+
+class BudgetTargetRead(BudgetTargetBase):
+    """Budget target response payload."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: dt.datetime
+    updated_at: dt.datetime
+
+
+class BudgetPlanItem(BaseModel):
+    """Budget vs actual line for a category."""
+
+    category: str
+    planned: float
+    actual: float
+    variance: float
+    variance_pct: float | None
+    status: str
+
+
+class BudgetPlanResponse(BaseModel):
+    """Monthly budget summary."""
+
+    year: int
+    month: int
+    period: str
+    total_planned: float
+    total_actual: float
+    total_variance: float
+    items: list[BudgetPlanItem]
+
+
 class CategoryBreakdownItem(BaseModel):
     """Category aggregate."""
 
@@ -220,7 +267,7 @@ class CsvUploadPayload(BaseModel):
 
     filename: str
     content_base64: str
-    replace_existing: bool = True
+    replace_existing: bool = False
 
 
 class CsvPreviewRow(BaseModel):
@@ -256,7 +303,7 @@ class NotesParsePayload(BaseModel):
     """Free-form notes payload sent from the browser."""
 
     content: str
-    replace_existing: bool = True
+    replace_existing: bool = False
 
 
 class NotesPreviewResponse(BaseModel):

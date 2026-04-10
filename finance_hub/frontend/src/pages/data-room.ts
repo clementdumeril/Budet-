@@ -231,7 +231,7 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
           </label>
 
           <label class="import-toggle">
-            <input id="replaceExistingInput" type="checkbox" checked />
+            <input id="replaceExistingInput" type="checkbox" />
             <span>Remplacer les transactions existantes par ce nouvel import</span>
           </label>
 

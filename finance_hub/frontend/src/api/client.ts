@@ -11,6 +11,36 @@ export type KPIResponse = {
   months_count: number;
 };
 
+export type BudgetTarget = {
+  id: number;
+  year: number;
+  month: number;
+  category: string;
+  planned_amount: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BudgetPlanItem = {
+  category: string;
+  planned: number;
+  actual: number;
+  variance: number;
+  variance_pct: number | null;
+  status: string;
+};
+
+export type BudgetPlanResponse = {
+  year: number;
+  month: number;
+  period: string;
+  total_planned: number;
+  total_actual: number;
+  total_variance: number;
+  items: BudgetPlanItem[];
+};
+
 export type CategoryBreakdownItem = {
   category: string;
   total: number;
@@ -193,6 +223,28 @@ export function fetchMonthly() {
   return getJson<{ items: MonthlyPoint[] }>("/api/analytics/monthly");
 }
 
+export function fetchBudgetPlan(year?: number, month?: number) {
+  const params = new URLSearchParams();
+  if (year !== undefined) {
+    params.set("year", String(year));
+  }
+  if (month !== undefined) {
+    params.set("month", String(month));
+  }
+  const query = params.toString();
+  return getJson<BudgetPlanResponse>(`/api/budget-plan${query ? `?${query}` : ""}`);
+}
+
+export function upsertBudgetTarget(payload: {
+  year: number;
+  month: number;
+  category: string;
+  planned_amount: number;
+  notes?: string | null;
+}) {
+  return postJson<BudgetTarget>("/api/budgets", payload);
+}
+
 export function fetchTransactions(params: URLSearchParams) {
   const query = params.toString();
   return getJson<TransactionListResponse>(`/api/transactions${query ? `?${query}` : ""}`);
@@ -260,11 +312,11 @@ export async function previewCsvUpload(file: File) {
   return postJson<CsvPreviewResponse>("/api/import-csv/preview", {
     filename: file.name,
     content_base64: await encodeFileToBase64(file),
-    replace_existing: true,
+    replace_existing: false,
   });
 }
 
-export async function importCsvUpload(file: File, replaceExisting = true) {
+export async function importCsvUpload(file: File, replaceExisting = false) {
   return postJson<CsvImportResponse>("/api/import-csv/upload", {
     filename: file.name,
     content_base64: await encodeFileToBase64(file),
@@ -275,11 +327,11 @@ export async function importCsvUpload(file: File, replaceExisting = true) {
 export function previewNotesCapture(content: string) {
   return postJson<NotesPreviewResponse>("/api/import-notes/preview", {
     content,
-    replace_existing: true,
+    replace_existing: false,
   });
 }
 
-export function importNotesCapture(content: string, replaceExisting = true) {
+export function importNotesCapture(content: string, replaceExisting = false) {
   return postJson<NotesImportResponse>("/api/import-notes", {
     content,
     replace_existing: replaceExisting,

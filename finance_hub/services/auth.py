@@ -51,6 +51,9 @@ def bootstrap_initial_admin(db: Session) -> None:
     """Ensure the configured admin user exists for local startup."""
 
     settings = get_settings()
+    if not settings.bootstrap_admin:
+        return
+
     existing_admin = db.scalar(select(User.id).where(User.email == settings.admin_email.strip().lower()))
     if existing_admin is not None:
         return

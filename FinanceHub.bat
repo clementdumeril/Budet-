@@ -6,10 +6,13 @@ set "TOOLS_DIR=%ROOT_DIR%\tools\windows"
 set "PROJECT_DIR=%ROOT_DIR%\finance_hub"
 set "VENV_DIR=%PROJECT_DIR%\.venv"
 set "PYTHON_EXE=%VENV_DIR%\Scripts\python.exe"
+set "FRONTEND_VITE=%PROJECT_DIR%\frontend\node_modules\.bin\vite.cmd"
+set "FRONTEND_DIST=%PROJECT_DIR%\frontend\dist\index.html"
 set "APP_PORT="
 set "BACKEND_URL="
 set "APP_URL="
 set "PYTHON_CMD="
+set "NEEDS_SETUP="
 
 if not exist "%PROJECT_DIR%\backend\main.py" (
     echo [ERREUR] Projet Finance Hub introuvable dans "%PROJECT_DIR%"
@@ -41,19 +44,31 @@ if errorlevel 1 (
 )
 
 if not exist "%PYTHON_EXE%" (
-    echo [INFO] Creation du venv...
-    %PYTHON_CMD% -m venv "%VENV_DIR%"
-    if errorlevel 1 exit /b 1
+    set "NEEDS_SETUP=1"
 )
 
 if not exist "%PROJECT_DIR%\.env" if exist "%PROJECT_DIR%\.env.example" (
     copy /y "%PROJECT_DIR%\.env.example" "%PROJECT_DIR%\.env" >nul
 )
 
-call "%TOOLS_DIR%\setup.bat"
-if errorlevel 1 (
-    echo [ERREUR] Le setup a echoue.
-    exit /b 1
+if not exist "%FRONTEND_VITE%" (
+    set "NEEDS_SETUP=1"
+)
+
+if not exist "%FRONTEND_DIST%" (
+    set "NEEDS_SETUP=1"
+)
+
+if defined NEEDS_SETUP (
+    echo [INFO] Environnement incomplet, lancement du setup...
+    call "%TOOLS_DIR%\setup.bat"
+    if errorlevel 1 (
+        echo [ERREUR] Le setup a echoue.
+        exit /b 1
+    )
+)
+if not defined NEEDS_SETUP (
+    echo [INFO] Environnement deja pret, setup complet ignore.
 )
 
 echo [INFO] Arret des anciens processus Finance Hub...
@@ -88,7 +103,7 @@ for /l %%i in (1,1,30) do (
 
 :backend_ready
 if not defined BACKEND_READY (
-    echo [ERREUR] Le backend ne repond pas sur http://127.0.0.1:8000
+    echo [ERREUR] Le backend ne repond pas sur %BACKEND_URL%
     echo Verifie la fenetre "Finance Hub Backend".
     exit /b 1
 )
