@@ -11,7 +11,9 @@ if str(ROOT_DIR) not in sys.path:
 
 from backend.config import get_settings
 from backend.main import app
+from backend.database import Base, SessionLocal, engine, init_storage
 from services.csv_parser import parse_budget_csv
+from services.report_publisher import export_static_report
 
 
 def main() -> None:
@@ -25,6 +27,13 @@ def main() -> None:
     if settings.bootstrap_demo_data and settings.csv_path.exists():
         rows = parse_budget_csv(settings.csv_path)
         assert rows, "demo CSV should contain rows"
+
+    init_storage()
+    Base.metadata.create_all(bind=engine)
+    with SessionLocal() as db:
+        result = export_static_report(db, settings)
+        assert result.html_path.exists(), "static report html missing"
+        assert result.json_path.exists(), "static report json missing"
 
     print(f"routes={len(routes)} demo_csv={settings.csv_path}")
 

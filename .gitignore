@@ -1,5 +1,6 @@
 archive/finance_hub_personal_legacy/
 archive/personal_assets/
 finance_hub/data/logs/
+finance_hub/data/published-report/
 gcm-diagnose.log
 .idea/

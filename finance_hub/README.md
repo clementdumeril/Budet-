@@ -2,6 +2,12 @@
 
 Finance Hub est l'application principale du depot. Elle fournit une interface simple pour suivre depenses, comptes, budgets mensuels, imports CSV et tendances budgetaires en local.
 
+Le mode recommande est maintenant:
+
+- application complete en local
+- export de rapports statiques agreges vers un dossier cible
+- GitHub comme depot d'installation, pas comme hebergement principal de tes donnees
+
 ## Lancement le plus simple
 
 Depuis le dossier parent qui contient `finance_hub`:
@@ -23,6 +29,8 @@ Scripts techniques disponibles si besoin:
 
 - `tools/windows/setup.bat`
 - `tools/windows/start.bat`
+- `../PublishBudgetReport.bat`
+- `../tools/windows/install_daily_report_task.ps1`
 
 Les logs backend sont ecrits dans `data/logs/`.
 
@@ -88,8 +96,22 @@ Variables principales:
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
 - `ADMIN_NAME`
+- `REPORT_PUBLISH_DIR`
+- `REPORT_TITLE`
+- `REPORT_RECENT_MONTHS`
+- `REPORT_INCLUDE_TRANSACTIONS`
 
 En local, le frontend utilise `/api` sur le meme serveur que le backend. `VITE_API_BASE_URL` reste optionnelle pour des cas avances.
+
+Pour publier uniquement un snapshot statique:
+
+- configure `REPORT_PUBLISH_DIR` vers ton site statique ou ton dossier Drive
+- lance `../PublishBudgetReport.bat`
+- ou installe la tache quotidienne Windows
+
+Guide publication de rapports:
+
+- `docs/report-publishing.md`
 
 Pour un frontend sur Netlify avec backend separe:
 
@@ -138,6 +160,7 @@ Avant de publier une instance:
 - desactive `BOOTSTRAP_ADMIN` apres initialisation si tu ne veux plus de creation auto
 - n'expose jamais `data/budget.db`
 - ne committe pas de CSV personnels
+- prefere publier `index.html` et `report.json` depuis `REPORT_PUBLISH_DIR`, pas l'application complete
 
 ## Securite et licence
 

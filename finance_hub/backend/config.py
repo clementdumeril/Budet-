@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     admin_email: str = DEFAULT_ADMIN_EMAIL
     admin_password: str = DEFAULT_ADMIN_PASSWORD
     admin_name: str = "Finance Hub Demo"
+    report_publish_dir: Path = DATA_DIR / "published-report"
+    report_title: str = "Finance Hub Report"
+    report_recent_months: int = 6
+    report_include_transactions: bool = False
 
     @field_validator("csv_path", mode="before")
     @classmethod
@@ -55,6 +59,20 @@ class Settings(BaseSettings):
                 return candidate
             return (BASE_DIR / candidate).resolve()
         return DEFAULT_CSV_PATH
+
+    @field_validator("report_publish_dir", mode="before")
+    @classmethod
+    def resolve_report_publish_dir(cls, value: object) -> Path:
+        """Resolve the static report directory relative to the project root."""
+
+        if isinstance(value, Path):
+            return value
+        if isinstance(value, str):
+            candidate = Path(value)
+            if candidate.is_absolute():
+                return candidate
+            return (BASE_DIR / candidate).resolve()
+        return DATA_DIR / "published-report"
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -74,6 +92,14 @@ class Settings(BaseSettings):
         normalized = str(value).strip().lower() if value is not None else "lax"
         if normalized not in allowed:
             raise ValueError(f"SESSION_SAME_SITE must be one of: {', '.join(sorted(allowed))}.")
+        return normalized
+
+    @field_validator("report_recent_months", mode="before")
+    @classmethod
+    def normalize_report_recent_months(cls, value: object) -> int:
+        normalized = int(value) if value is not None else 6
+        if normalized <= 0:
+            raise ValueError("REPORT_RECENT_MONTHS must be a positive integer.")
         return normalized
 
     @property

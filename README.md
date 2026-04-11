@@ -19,6 +19,7 @@ Ce lanceur unique:
 - coupe les anciens serveurs Finance Hub encore ouverts
 - lance le backend unique sur `8000` ou sur le prochain port libre
 - ouvre l'application dans le navigateur
+- laisse la publication de rapports statiques a un script separe
 
 Les logs backend sont ecrits dans `finance_hub/data/logs/`.
 
@@ -26,6 +27,8 @@ Scripts techniques secondaires:
 
 - `tools/windows/setup.bat`
 - `tools/windows/start.bat`
+- `PublishBudgetReport.bat`
+- `tools/windows/install_daily_report_task.ps1`
 
 Version PowerShell:
 
@@ -50,5 +53,6 @@ powershell -ExecutionPolicy Bypass -File .\tools\windows\start.ps1
 La racine sert uniquement a:
 
 - lancer Finance Hub en un clic
+- publier un rapport statique quotidien si besoin
 - garder un point d'entree minimal
 - documenter l'entree principale
