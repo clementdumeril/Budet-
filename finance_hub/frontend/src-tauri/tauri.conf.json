@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Finance Hub",
+  "version": "0.1.0",
+  "identifier": "eu.ensam.financehub",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:5173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Finance Hub",
+        "width": 1480,
+        "height": 960,
+        "minWidth": 1180,
+        "minHeight": 820,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/icon.ico",
+      "icons/icon.png"
+    ],
+    "shortDescription": "Pilotage local des depenses, comptes, placements et rapports.",
+    "longDescription": "Finance Hub est une application desktop locale pour suivre manuellement depenses, comptes, investissements, prets et publier des snapshots hebdomadaires.",
+    "category": "Finance"
+  }
+}

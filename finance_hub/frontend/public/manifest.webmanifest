@@ -1,0 +1,17 @@
+{
+  "name": "Finance Hub",
+  "short_name": "Finance Hub",
+  "description": "Pilotage local des depenses, comptes, placements et rapports.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4ede0",
+  "theme_color": "#f4ede0",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

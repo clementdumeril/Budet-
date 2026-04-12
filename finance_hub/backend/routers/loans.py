@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -63,6 +63,27 @@ def create_loan(
     return loan
 
 
+@router.put("/loans/{loan_id}", response_model=LoanRead, status_code=status.HTTP_200_OK)
+def update_loan(
+    loan_id: int,
+    payload: LoanCreate,
+    db: Session = Depends(get_db),
+    _: object = Depends(require_editor_user),
+) -> LoanRead:
+    """Update one loan record."""
+
+    loan = db.get(Loan, loan_id)
+    if loan is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Loan not found")
+
+    for field, value in payload.model_dump().items():
+        setattr(loan, field, value)
+
+    db.commit()
+    db.refresh(loan)
+    return loan
+
+
 @router.get("/investments", response_model=list[InvestmentRead])
 def list_investments(db: Session = Depends(get_db)) -> list[InvestmentRead]:
     """List all stored investments."""
@@ -80,6 +101,27 @@ def create_investment(
 
     investment = Investment(**payload.model_dump())
     db.add(investment)
+    db.commit()
+    db.refresh(investment)
+    return investment
+
+
+@router.put("/investments/{investment_id}", response_model=InvestmentRead, status_code=status.HTTP_200_OK)
+def update_investment(
+    investment_id: int,
+    payload: InvestmentCreate,
+    db: Session = Depends(get_db),
+    _: object = Depends(require_editor_user),
+) -> InvestmentRead:
+    """Update one investment record."""
+
+    investment = db.get(Investment, investment_id)
+    if investment is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Investment not found")
+
+    for field, value in payload.model_dump().items():
+        setattr(investment, field, value)
+
     db.commit()
     db.refresh(investment)
     return investment

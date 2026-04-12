@@ -1,58 +1,36 @@
 # Finance Hub Workspace
 
-Ce depot est maintenant centre sur une seule application utilisable: `finance_hub`.
+Ce depot est centre sur une seule application: `finance_hub`.
 
-Le contenu personnel et legacy a ete sorti du chemin principal dans `archive/` pour eviter les confusions au lancement.
+La racine est maintenant volontairement minimale:
 
-## Demarrage rapide
+- `FinanceHubDesktop.bat`: point d'entree principal
+- `finance_hub/`: code produit
+- `archive/`: anciens flux et fichiers legacy
+
+## Demarrage recommande
 
 Depuis cette racine:
 
 ```bat
-FinanceHub.bat
+FinanceHubDesktop.bat
 ```
 
-Ce lanceur unique:
+Ce lanceur ouvre la version desktop locale de Finance Hub.
 
-- prepare l'environnement si besoin
-- build le frontend
-- coupe les anciens serveurs Finance Hub encore ouverts
-- lance le backend unique sur `8000` ou sur le prochain port libre
-- ouvre l'application dans le navigateur
-- laisse la publication de rapports statiques a un script separe
+## Dossier principal
 
-Les logs backend sont ecrits dans `finance_hub/data/logs/`.
+- `finance_hub/`: application locale `local-first`
+- `finance_hub/frontend/src-tauri/`: wrapper desktop Tauri
+- `finance_hub/docs/desktop-wrapper.md`: details du wrapper
 
-Scripts techniques secondaires:
+## Legacy archive
 
-- `tools/windows/setup.bat`
-- `tools/windows/start.bat`
-- `PublishBudgetReport.bat`
-- `tools/windows/install_daily_report_task.ps1`
+Les anciens points d'entree backend/deploiement ont ete ranges dans:
 
-Version PowerShell:
+- `archive/runtime_legacy/`
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\windows\setup.ps1
-powershell -ExecutionPolicy Bypass -File .\tools\windows\start.ps1
-```
+Le contenu personnel plus ancien reste dans:
 
-## Parcours officiel
-
-- `finance_hub/`: application principale a utiliser
-- `archive/finance_hub_personal_legacy/`: ancienne variante personnelle, sortie du flux principal
-- `archive/personal_assets/`: anciens fichiers perso de travail, hors du produit principal
-
-## Connexion locale par defaut
-
-- email: `demo@financehub.local`
-- mot de passe: `demo1234`
-
-## Objectif de la racine
-
-La racine sert uniquement a:
-
-- lancer Finance Hub en un clic
-- publier un rapport statique quotidien si besoin
-- garder un point d'entree minimal
-- documenter l'entree principale
+- `archive/finance_hub_personal_legacy/`
+- `archive/personal_assets/`

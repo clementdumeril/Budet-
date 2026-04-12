@@ -1,15 +1,16 @@
 import "./style.css";
 
-import { fetchSession, login, logout, type User } from "./api/client";
+import { fetchSession, login, type User } from "./api/client";
 import { renderAccountsPage } from "./pages/accounts";
 import { renderDataRoomPage } from "./pages/data-room";
 import { renderDashboardPage } from "./pages/dashboard";
 import { renderInvestmentsPage } from "./pages/investments";
+import { renderLoansPage } from "./pages/loans";
 import { renderOverviewPage } from "./pages/overview";
 import { renderReportsPage } from "./pages/reports";
 import { renderTransactionsPage } from "./pages/transactions";
 
-type ViewName = "overview" | "accounts" | "cashflow" | "transactions" | "reports" | "investments" | "data";
+type ViewName = "overview" | "accounts" | "cashflow" | "transactions" | "reports" | "investments" | "loans" | "data";
 
 const appRoot = document.querySelector<HTMLDivElement>("#app");
 
@@ -73,6 +74,13 @@ const navItems: Array<{ key: ViewName; label: string; description: string; eyebr
     title: "Suivi investissements et portefeuille",
   },
   {
+    key: "loans",
+    label: "Prets",
+    description: "Credits et echeances",
+    eyebrow: "Prets",
+    title: "Suivi des prets et du reste a rembourser",
+  },
+  {
     key: "data",
     label: "Donnees",
     description: "Imports, notes et exports",
@@ -111,6 +119,8 @@ async function renderView(view: ViewName) {
               ? await renderReportsPage()
               : view === "investments"
                 ? await renderInvestmentsPage()
+                : view === "loans"
+                  ? await renderLoansPage()
                 : view === "data"
                   ? await renderDataRoomPage()
                   : await renderTransactionsPage();
@@ -122,7 +132,7 @@ async function renderView(view: ViewName) {
       renderLoginShell("Session expiree, reconnecte-toi.");
       return;
     }
-    outlet.innerHTML = `<section class="panel error-panel"><h2>API indisponible</h2><p>${message}</p><p>Demarre le backend FastAPI avant le frontend.</p></section>`;
+    outlet.innerHTML = `<section class="panel error-panel"><h2>Finance Hub indisponible</h2><p>${message}</p><p>Relance l'application avec FinanceHub.bat pour rouvrir ton espace local.</p></section>`;
   }
 }
 
@@ -132,23 +142,23 @@ function renderShell() {
       <aside class="sidebar">
         <div class="brand-block">
           <p class="eyebrow">Finance Hub</p>
-          <h1>Pilotage budgetaire</h1>
-          <p class="muted">Interface simple pour suivre depenses, comptes, epargne et imports CSV depuis un seul espace clair.</p>
+          <h1>Ton cockpit budget</h1>
+          <p class="muted">Une app locale pour suivre depenses, comptes, placements et prets sans connexion bancaire obligatoire.</p>
           <div class="brand-meta-strip">
             <article class="brand-meta-card">
               <span>Mode</span>
-              <strong>Local</strong>
+              <strong>App locale</strong>
             </article>
             <article class="brand-meta-card">
-              <span>Usage</span>
-              <strong>Etudiant</strong>
+              <span>Rapports</span>
+              <strong>Hebdo</strong>
             </article>
           </div>
         </div>
         <nav class="side-nav" id="sideNav"></nav>
         <div class="sidebar-footer">
-          <p class="sidebar-footer-title">${currentUser?.full_name ?? "Session locale"}</p>
-          <p class="sidebar-footer-copy">Base locale active, imports et rapports centralises dans un seul flux.</p>
+          <p class="sidebar-footer-title">${currentUser?.full_name ?? "Profil local"}</p>
+          <p class="sidebar-footer-copy">Saisie rapide, imports avec preview et publication de rapports dans le meme espace.</p>
         </div>
       </aside>
       <main class="content-area">
@@ -156,14 +166,17 @@ function renderShell() {
           <div class="topbar-copy">
             <p class="eyebrow" id="topbarEyebrow">Dashboard</p>
             <h2 id="topbarTitle">Vue generale du budget</h2>
-            <p class="topbar-note">Espace de pilotage unique pour lire le budget, saisir vite et normaliser les donnees.</p>
+            <p class="topbar-note">App locale de pilotage: tu suis les soldes a la main, tu importes tes depenses et tu publies des rapports propres.</p>
           </div>
           <div class="topbar-actions">
             <div class="topbar-user">
-              <span class="status-chip">${formatRoleLabel(currentUser?.role)}</span>
+              <span class="status-chip">mode local</span>
               <strong>${currentUser?.full_name ?? "Utilisateur local"}</strong>
             </div>
-            <button class="logout-button" id="logoutButton" type="button">Se deconnecter</button>
+            <div class="topbar-user">
+              <span class="status-chip status-chip-soft">${formatRoleLabel(currentUser?.role)}</span>
+              <strong>publication prete</strong>
+            </div>
           </div>
         </header>
         <div id="viewOutlet"></div>
@@ -198,15 +211,6 @@ function renderShell() {
   if (firstButton) {
     firstButton.classList.add("is-active");
   }
-
-  const logoutButton = document.getElementById("logoutButton");
-  if (logoutButton) {
-    logoutButton.addEventListener("click", async () => {
-      await logout();
-      currentUser = null;
-      renderLoginShell();
-    });
-  }
 }
 
 function renderLoginShell(errorMessage?: string) {
@@ -215,19 +219,19 @@ function renderLoginShell(errorMessage?: string) {
       <section class="login-panel">
         <p class="eyebrow">Finance Hub</p>
         <h1>Finance Hub</h1>
-        <p class="muted">Connecte-toi pour piloter tes finances en local avec un parcours de demarrage simple.</p>
+        <p class="muted">Mode de secours local. En usage normal, l'app ouvre directement ton espace personnel.</p>
         <form id="loginForm" class="login-form">
           <label>
             <span>Email</span>
-            <input id="emailInput" type="email" autocomplete="username" placeholder="demo@financehub.local" required />
+            <input id="emailInput" type="email" autocomplete="username" placeholder="local@financehub.app" required />
           </label>
           <label>
             <span>Mot de passe</span>
-            <input id="passwordInput" type="password" autocomplete="current-password" placeholder="demo1234" required />
+            <input id="passwordInput" type="password" autocomplete="current-password" placeholder="local-only" required />
           </label>
           <button type="submit" class="primary-button">Se connecter</button>
         </form>
-        <p class="login-hint">Compte demo local par defaut. Change les identifiants avant de publier une instance.</p>
+        <p class="login-hint">Cette vue n'apparait que si le chargement automatique local echoue.</p>
         ${errorMessage ? `<p class="login-error">${errorMessage}</p>` : ""}
       </section>
     </main>
@@ -257,7 +261,7 @@ function renderLoginShell(errorMessage?: string) {
     } catch (error) {
       const message = error instanceof Error && error.message.includes("401")
         ? "Identifiants invalides."
-        : "Connexion impossible. Verifie que le backend tourne.";
+        : "Connexion locale impossible. Recharge l'application ou reessaie.";
       renderLoginShell(message);
     }
   });

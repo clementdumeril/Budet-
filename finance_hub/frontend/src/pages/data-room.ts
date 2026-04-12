@@ -3,6 +3,7 @@ import {
   fetchImportSources,
   importCsvUpload,
   importNotesCapture,
+  publishStaticReport,
   previewCsvUpload,
   previewNotesCapture,
   type CsvPreviewResponse,
@@ -159,8 +160,8 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
     <section class="overview-hero">
       <div>
         <p class="eyebrow">Data</p>
-        <h1>Entrer des notes, normaliser des CSV et sortir des rapports.</h1>
-        <p class="hero-copy">Le flux principal part des notes rapides. Le CSV reste disponible en seconde voie avec aide de normalisation et export rapport depuis le site.</p>
+        <h1>Entrer des notes, normaliser des CSV et publier des snapshots.</h1>
+        <p class="hero-copy">Le flux principal part des notes rapides. Le CSV reste disponible en seconde voie avec aide de normalisation et publication locale du rapport statique.</p>
       </div>
       <div class="overview-mini-stats">
         <article>
@@ -227,7 +228,7 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
             <input id="csvUploadInput" type="file" accept=".csv,text/csv" />
             <span class="badge badge-blue">CSV</span>
             <strong id="importFileName">Choisir un export banque ou budget</strong>
-            <p id="importFileMeta">Le fichier reste prive, une copie horodatee est stockee dans le dossier data/imports.</p>
+            <p id="importFileMeta">Le fichier reste local sur ton PC. L'app lit le CSV dans le navigateur puis l'integre a ton espace local.</p>
           </label>
 
           <label class="import-toggle">
@@ -261,6 +262,7 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
         </div>
         <div class="import-form export-actions-block">
           <button id="downloadReportButton" class="primary-button import-primary" type="button">Telecharger le CSV rapport</button>
+          <button id="publishSnapshotButton" class="ghost-button import-primary" type="button">Publier le snapshot HTML</button>
           <p id="reportStatus" class="muted import-status">Exporte la base normalisee actuelle sous forme de CSV rapport.</p>
         </div>
         <div class="panel-heading compact-heading">
@@ -309,12 +311,12 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
           <article class="insight-card">
             <span class="badge badge-green">3</span>
             <strong>Importer une base propre</strong>
-            <p>Le backend remplit ensuite la base exploitee par les dashboards.</p>
+            <p>Le navigateur remplit ensuite ton espace local exploite par les dashboards.</p>
           </article>
           <article class="insight-card">
             <span class="badge badge-rose">4</span>
-            <strong>Sortir un rapport CSV</strong>
-            <p>Tu peux retelecharger un CSV propre depuis le site pour partage ou archivage.</p>
+            <strong>Publier un snapshot</strong>
+            <p>Tu peux sortir un CSV propre ou ecrire un rapport statique HTML et JSON dans un dossier local.</p>
           </article>
         </div>
       </article>
@@ -339,6 +341,7 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
   const claudePromptOutput = section.querySelector<HTMLTextAreaElement>("#claudePromptOutput");
   const notesTemplateOutput = section.querySelector<HTMLTextAreaElement>("#notesTemplateOutput");
   const downloadReportButton = section.querySelector<HTMLButtonElement>("#downloadReportButton");
+  const publishSnapshotButton = section.querySelector<HTMLButtonElement>("#publishSnapshotButton");
   const previewWrap = section.querySelector<HTMLElement>("#importPreviewWrap");
   const sourcesList = section.querySelector<HTMLElement>("#importSourcesList");
 
@@ -361,6 +364,7 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
     !claudePromptOutput ||
     !notesTemplateOutput ||
     !downloadReportButton ||
+    !publishSnapshotButton ||
     !previewWrap ||
     !sourcesList
   ) {
@@ -379,6 +383,7 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
     importButton.disabled = busy;
     copyClaudePromptButton.disabled = busy;
     downloadReportButton.disabled = busy;
+    publishSnapshotButton.disabled = busy;
     previewNotesButton.textContent = busy ? "Chargement..." : "Preview notes";
     importNotesButton.textContent = busy ? "Import en cours..." : "Importer les notes";
     previewButton.textContent = busy ? "Chargement..." : "Preview";
@@ -398,7 +403,7 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
 
     if (!selectedFile) {
       fileName.textContent = "Choisir un export banque ou budget";
-      fileMeta.textContent = "Le fichier reste prive, une copie horodatee est stockee dans le dossier data/imports.";
+      fileMeta.textContent = "Le fichier reste local sur ton PC. L'app lit le CSV dans le navigateur puis l'integre a ton espace local.";
       status.textContent = "Selectionne un fichier pour lancer la preview.";
       return;
     }
@@ -524,6 +529,23 @@ export async function renderDataRoomPage(): Promise<HTMLElement> {
       reportStatus.textContent = `Export impossible: ${message}`;
     } finally {
       downloadReportButton.disabled = false;
+    }
+  });
+
+  publishSnapshotButton.addEventListener("click", async () => {
+    reportStatus.textContent = "Preparation du snapshot statique...";
+    publishSnapshotButton.disabled = true;
+    try {
+      const result = await publishStaticReport();
+      reportStatus.textContent =
+        result.mode === "folder"
+          ? `Snapshot publie dans le dossier choisi: ${result.title}.`
+          : `Snapshot telecharge localement: ${result.title}.`;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erreur inconnue";
+      reportStatus.textContent = `Publication impossible: ${message}`;
+    } finally {
+      publishSnapshotButton.disabled = false;
     }
   });
 

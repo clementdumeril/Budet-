@@ -6,12 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "desktop:dev": "set \"CARGO_TARGET_DIR=%USERPROFILE%\\.cargo-target\\finance-hub\" && tauri dev",
+    "desktop:build": "set \"CARGO_TARGET_DIR=%USERPROFILE%\\.cargo-target\\finance-hub\" && tauri build"
   },
   "dependencies": {
     "chart.js": "4.4.9"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
     "typescript": "5.8.3",
     "vite": "6.3.5"
   }

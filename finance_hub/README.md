@@ -1,42 +1,51 @@
 # Finance Hub
 
-Finance Hub est l'application principale du depot. Elle fournit une interface simple pour suivre depenses, comptes, budgets mensuels, imports CSV et tendances budgetaires en local.
+Finance Hub est maintenant une application locale `local-first` avec wrapper desktop Tauri.
 
-Le mode recommande est maintenant:
+Le mode recommande est:
 
-- application complete en local
-- export de rapports statiques agreges vers un dossier cible
-- GitHub comme depot d'installation, pas comme hebergement principal de tes donnees
+- app desktop locale
+- saisie manuelle claire pour comptes, placements et prets
+- imports `notes/CSV + preview`
+- publication de snapshots statiques depuis l'app
 
-## Lancement le plus simple
+## Lancement principal
 
 Depuis le dossier parent qui contient `finance_hub`:
 
 ```bat
-FinanceHub.bat
+..\FinanceHubDesktop.bat
 ```
 
-Version PowerShell:
+## Lancement frontend seul
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\windows\setup.ps1
-powershell -ExecutionPolicy Bypass -File .\tools\windows\start.ps1
+Depuis `frontend/`:
+
+```bat
+npm run build
 ```
 
-Le lanceur principal verifie l'environnement, lance le `setup` seulement si besoin, coupe les anciens serveurs Finance Hub encore actifs et relance un backend propre qui sert l'interface sur `http://127.0.0.1:8000` ou sur le prochain port libre.
+## Wrapper desktop
 
-Scripts techniques disponibles si besoin:
+La couche desktop est dans:
 
-- `tools/windows/setup.bat`
-- `tools/windows/start.bat`
-- `../PublishBudgetReport.bat`
-- `../tools/windows/install_daily_report_task.ps1`
+- `frontend/src-tauri/`
 
-Les logs backend sont ecrits dans `data/logs/`.
+Guide associe:
+
+- `docs/desktop-wrapper.md`
+
+## Mode backend legacy
+
+L'ancien mode backend local/public existe encore seulement comme couche legacy technique.
+
+Les anciens points d'entree racine ont ete deplaces dans:
+
+- `../archive/runtime_legacy/`
 
 ## Lancement manuel
 
-### Backend
+### Backend legacy
 
 ```bat
 python -m venv .venv
@@ -48,35 +57,30 @@ cd ..
 .venv\Scripts\python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 
-Application: `http://127.0.0.1:8000`
+Application legacy: `http://127.0.0.1:8000`
 
-## Connexion locale
+## Session locale
 
-Au premier lancement, si `BOOTSTRAP_ADMIN=true` et si la base est vide, l'application cree un compte de demo:
+Le mode normal est maintenant mono-utilisateur local.
 
-- email: `demo@financehub.local`
-- mot de passe: `demo1234`
+Le frontend ouvre directement le profil local sans parcours de login visible.
 
 ## Fonctionnalites
 
-- authentification par session
 - dashboard budgetaire avec graphiques
 - budget mensuel `prevu vs reel`
 - cash flow et repartition par categories
 - suivi des comptes
 - suivi des investissements
+- suivi des prets
 - saisie manuelle des transactions
 - import CSV avec preview
+- import notes avec preview
+- wrapper desktop Windows
 
 ## Donnees de demo
 
-Par defaut, le projet charge `data/demo-budget.csv` si la base est vide.
-
-Pour demarrer sans donnees de demo:
-
-```env
-BOOTSTRAP_DEMO_DATA=false
-```
+Par defaut, le frontend charge `frontend/public/demo-budget.csv` au premier lancement local.
 
 ## Variables d'environnement
 
@@ -101,19 +105,20 @@ Variables principales:
 - `REPORT_RECENT_MONTHS`
 - `REPORT_INCLUDE_TRANSACTIONS`
 
-En local, le frontend utilise `/api` sur le meme serveur que le backend. `VITE_API_BASE_URL` reste optionnelle pour des cas avances.
+Le mode principal n'a plus besoin d'API distante pour fonctionner.
 
-Pour publier uniquement un snapshot statique:
+Pour publier un snapshot statique:
 
-- configure `REPORT_PUBLISH_DIR` vers ton site statique ou ton dossier Drive
-- lance `../PublishBudgetReport.bat`
-- ou installe la tache quotidienne Windows
+- utilise l'ecran `Donnees` dans l'app
+- exporte le CSV
+- ou publie le snapshot HTML/JSON dans un dossier local
 
 Guide publication de rapports:
 
 - `docs/report-publishing.md`
+- `docs/desktop-wrapper.md`
 
-Pour un frontend sur Netlify avec backend separe:
+Pour l'ancien mode frontend sur Netlify avec backend separe:
 
 - configure `CORS_ORIGINS` avec le domaine du frontend
 - passe `SESSION_SAME_SITE=none`
@@ -123,15 +128,14 @@ Pour un frontend sur Netlify avec backend separe:
 Guide production:
 
 - `docs/deployment-production.md`
-- `../render.yaml`
 - `../.github/workflows/deploy-frontend-github-pages.yml`
 
 ## Structure
 
-- `backend/`: API FastAPI et routes
-- `services/`: auth, parsing CSV, bootstrap
-- `services/`: auth, parsing CSV, bootstrap, budget planning
-- `frontend/`: application Vite/TypeScript
+- `frontend/`: application principale
+- `frontend/src-tauri/`: wrapper desktop
+- `backend/`: couche legacy FastAPI
+- `services/`: services legacy Python
 - `data/`: CSV demo et base locale
 - `docs/`: documentation technique
 - `scripts/`: checks locaux

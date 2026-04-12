@@ -1,0 +1,19 @@
+id,month_name,year,raw_category,description,amount,reimbursement
+1,Septembre,2025,Food,Supermarche residence,58.40,No
+2,Septembre,2025,Rent,Loyer studio,520.00,No
+3,Septembre,2025,Transport,Carte transport,28.50,No
+4,Octobre,2025,Food,Resto campus,14.20,No
+5,Octobre,2025,School,Frais inscription,180.00,Yes
+6,Octobre,2025,Subscription,Spotify + cloud,12.99,No
+7,Novembre,2025,Food,Courses colocation,63.80,No
+8,Novembre,2025,Loisirs,Cinema,11.00,No
+9,Novembre,2025,Transport,Train retour famille,46.00,Yes
+10,Decembre,2025,One Time,Caution logement,300.00,Yes
+11,Decembre,2025,Health,Pharmacie,18.90,No
+12,Janvier,2026,Food,Drive supermarche,72.10,No
+13,Janvier,2026,School,Manuels semestre,54.00,No
+14,Fevrier,2026,Loisirs,Weekend association,42.00,No
+15,Fevrier,2026,Transport,Bus interurbain,19.40,No
+16,Mars,2026,Food,Crous,39.50,No
+17,Mars,2026,Subscription,Abonnement sport,24.00,No
+18,Avril,2026,Rent,Loyer studio,520.00,No

@@ -242,6 +242,11 @@ button:disabled {
   font-size: 0.82rem;
 }
 
+.status-chip-soft {
+  background: rgba(31, 36, 48, 0.06);
+  color: var(--muted);
+}
+
 .logout-button,
 .primary-button,
 .ghost-button {
@@ -1069,6 +1074,71 @@ button:disabled {
   gap: 12px;
 }
 
+.entity-list {
+  display: grid;
+  gap: 14px;
+}
+
+.entity-row {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(31, 36, 48, 0.05);
+}
+
+.entity-row-main,
+.entity-row-footer,
+.entity-inline-meta,
+.manual-form-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.entity-row-main strong,
+.entity-row-footer strong {
+  font-family: "Sora", sans-serif;
+}
+
+.entity-row-main p,
+.entity-row-footer p,
+.entity-inline-meta span {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.entity-row-meta {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  text-align: right;
+}
+
+.entity-row-footer {
+  align-items: flex-end;
+}
+
+.entity-row-footer p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.entity-inline-meta {
+  flex: 0 0 auto;
+}
+
+.entity-submit,
+.entity-cancel {
+  width: auto;
+}
+
+.entity-action {
+  width: auto;
+}
+
 .overview-list-item,
 .reports-stat-list article,
 .summary-metrics article {
@@ -1182,6 +1252,10 @@ button:disabled {
   resize: vertical;
   font: inherit;
   line-height: 1.6;
+}
+
+.compact-textarea {
+  min-height: 124px;
 }
 
 .claude-prompt-output {
@@ -1635,7 +1709,11 @@ button:disabled {
   .flow-row-head,
   .cashflow-header-row,
   .cashflow-node-topline,
-  .cashflow-group-head {
+  .cashflow-group-head,
+  .entity-row-main,
+  .entity-row-footer,
+  .entity-inline-meta,
+  .manual-form-actions {
     flex-direction: column;
   }
 

@@ -28,12 +28,13 @@ class Settings(BaseSettings):
         enable_decoding=False,
     )
 
-    app_name: str = "Finance Hub API"
+    app_name: str = "Finance Hub"
     app_env: str = "development"
     database_url: str = "sqlite:///./data/budget.db"
     csv_path: Path = DEFAULT_CSV_PATH
     bootstrap_demo_data: bool = True
     bootstrap_admin: bool = True
+    local_auth_bypass: bool = True
     cors_origins: list[str] = DEFAULT_CORS_ORIGINS.copy()
     session_secret: str = DEFAULT_SESSION_SECRET
     session_cookie_name: str = "finance_hub_session"
@@ -117,6 +118,8 @@ class Settings(BaseSettings):
             raise ValueError("SESSION_SECRET must be changed in production.")
         if self.bootstrap_demo_data:
             raise ValueError("BOOTSTRAP_DEMO_DATA must be false in production.")
+        if self.local_auth_bypass:
+            raise ValueError("LOCAL_AUTH_BYPASS must be false in production.")
         if self.admin_email.strip().lower() == DEFAULT_ADMIN_EMAIL:
             raise ValueError("ADMIN_EMAIL must be changed in production.")
         if self.admin_password == DEFAULT_ADMIN_PASSWORD:

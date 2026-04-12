@@ -80,11 +80,27 @@ def authenticate_user(db: Session, email: str, password: str) -> User | None:
     return user
 
 
+def _get_local_bypass_user(db: Session) -> User | None:
+    """Return the local single-user profile when auth bypass is enabled."""
+
+    settings = get_settings()
+    preferred_email = settings.admin_email.strip().lower()
+    preferred_user = db.scalar(select(User).where(User.email == preferred_email, User.is_active.is_(True)))
+    if preferred_user is not None:
+        return preferred_user
+    return db.scalar(select(User).where(User.is_active.is_(True)).order_by(User.created_at.asc()))
+
+
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     """Return the authenticated user from the signed session cookie."""
 
+    settings = get_settings()
     user_id = request.session.get(SESSION_USER_KEY)
     if user_id is None:
+        if settings.local_auth_bypass and not settings.is_production:
+            bypass_user = _get_local_bypass_user(db)
+            if bypass_user is not None:
+                return bypass_user
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
     user = db.get(User, int(user_id))

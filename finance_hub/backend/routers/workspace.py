@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -32,6 +32,27 @@ def create_account(
 
     account = Account(**payload.model_dump())
     db.add(account)
+    db.commit()
+    db.refresh(account)
+    return account
+
+
+@router.put("/accounts/{account_id}", response_model=AccountRead, status_code=status.HTTP_200_OK)
+def update_account(
+    account_id: int,
+    payload: AccountCreate,
+    db: Session = Depends(get_db),
+    _: object = Depends(require_editor_user),
+) -> AccountRead:
+    """Update a financial account."""
+
+    account = db.get(Account, account_id)
+    if account is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
+
+    for field, value in payload.model_dump().items():
+        setattr(account, field, value)
+
     db.commit()
     db.refresh(account)
     return account
